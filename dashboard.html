@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Models Dashboard — Itaú BBA Research</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #ffffff;
+            color: #222222;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 2000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 14px 20px;
+            border-bottom: 2px solid #F47920;
+            background: #111111;
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #F47920;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #d66216;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .tab-container {
+            margin-bottom: 30px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background-color: transparent;
+            color: #666;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin-bottom: -1px;
+        }
+
+        .tab-btn:hover {
+            color: #333;
+        }
+
+        .tab-btn.active {
+            color: #F47920;
+            border-bottom-color: #F47920;
+            background-color: rgba(244, 121, 32, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background-color: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-container h3 {
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #F47920;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+
+        .consolidated-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .consolidated-table thead {
+            background-color: #f5f5f5;
+        }
+
+        .consolidated-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a1a;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .consolidated-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .consolidated-table tbody tr:hover {
+            background-color: #f8f8f8;
+        }
+
+        .metric-header {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            color: #F47920;
+        }
+
+        .bank-row {
+            color: #333;
+        }
+
+        .estimate {
+            color: #F47920;
+            font-weight: 500;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1px solid #F47920;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #F47920;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone:hover {
+            background-color: rgba(244, 121, 32, 0.1);
+        }
+
+        .drop-zone.dragover {
+            background-color: rgba(244, 121, 32, 0.2);
+        }
+
+        .bank-select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .bank-select option {
+            background-color: #ffffff;
+            color: #333;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .close-modal {
+            background-color: #999;
+            padding: 10px 15px;
+        }
+
+        .close-modal:hover {
+            background-color: #777;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #F47920;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+
+        /* ── Consolidated Tables (redesigned) ── */
+        .consol-section { margin-bottom: 20px; }
+        .consol-section h2 {
+            font-size: 15px; font-weight: 600; color: #1a1a1a;
+            border-bottom: 2px solid #F47920; padding-bottom: 4px; margin-bottom: 6px;
+        }
+        .consol-table {
+            width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px;
+            table-layout: fixed;
+        }
+        .consol-table th {
+            background: #1a1a1a; color: #fff; padding: 4px 8px; text-align: right;
+            font-weight: 600; font-size: 11px; white-space: nowrap;
+        }
+        .consol-table th:first-child { text-align: left; }
+        .consol-table th.est-year { color: #F47920; }
+        .consol-table th.yoy-col { background: #333; font-size: 11px; }
+        .consol-table td {
+            padding: 2px 8px; text-align: right; border-bottom: 1px solid #eee;
+            font-variant-numeric: tabular-nums; font-size: 12px;
+        }
+        .consol-table td:first-child {
+            text-align: left; font-weight: 500; color: #333; padding-left: 8px;
+        }
+        .consol-table tr:hover td { background: #fafafa; }
+        .consol-table .bank-header td {
+            font-weight: 700; color: #1a1a1a; padding-top: 10px;
+            border-bottom: 2px solid #ddd; font-size: 13px; background: #f7f7f7;
+        }
+        .yoy-pos { color: #1a8a3f; font-weight: 600; }
+        .yoy-neg { color: #c0392b; font-weight: 600; }
+        .bps-pos { color: #1a8a3f; font-size: 11px; }
+        .bps-neg { color: #c0392b; font-size: 11px; }
+        .yoy-subrow td { border-bottom: 1px solid #f0f0f0; background: #fcfcfc; }
+        /* ── Valuation Multiples Table ── */
+        .multiples-table td { font-size: 12px; }
+        .multiples-table td.ticker-cell { color: #F47920; font-weight: 700; text-align: right; }
+        .multiples-table td.num-cell    { text-align: right; font-variant-numeric: tabular-nums; }
+        .multiples-table td.price-brl   { font-weight: 600; color: #1a1a1a; text-align: right; }
+        .multiples-table td.price-usd   { font-weight: 600; color: #1E6091; text-align: right; }
+        .multiples-table .loading-cell  { color: #bbb; font-style: italic; text-align: right; }
+        .multiples-refresh { font-size: 11px; padding: 3px 12px; background: transparent;
+            color: #F47920; border: 1px solid #F47920; border-radius: 4px; cursor: pointer;
+            margin-top: 6px; transition: background 0.2s; }
+        .multiples-refresh:hover { background: rgba(244,121,32,0.1); }
+
+        /* ── Consolidated Charts ── */
+        .bank-toggles {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;
+            padding: 12px 0; border-bottom: 1px solid #ddd;
+        }
+        .bank-toggle {
+            padding: 6px 14px; border: 2px solid; border-radius: 20px;
+            cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: all 0.2s; user-select: none;
+        }
+        .bank-toggle.active { color: #fff; }
+        .bank-toggle:not(.active) { opacity: 0.35; }
+        .consol-charts-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;
+        }
+        .consol-chart-container {
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px;
+        }
+        .consol-chart-container h3 { font-size: 14px; margin-bottom: 10px; color: #333; }
+        .consol-chart-wrapper { position: relative; height: 320px; }
+
+        /* ── Year Range Filter ── */
+        .year-filter-bar {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+            padding: 10px 14px; background: #f9f9f9; border: 1px solid #e0e0e0;
+            border-radius: 6px; flex-wrap: wrap;
+        }
+        .year-filter-bar label { font-size: 12px; font-weight: 600; color: #555; }
+        .year-filter-bar select {
+            padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 12px; font-weight: 600; color: #333; background: #fff;
+            cursor: pointer; min-width: 80px;
+        }
+        .year-filter-bar select:focus { outline: none; border-color: #F47920; }
+        .year-filter-bar .filter-sep { color: #999; font-size: 13px; }
+        .year-filter-bar .filter-reset {
+            padding: 4px 12px; font-size: 11px; background: transparent;
+            color: #F47920; border: 1px solid #F47920; border-radius: 4px;
+            cursor: pointer; transition: background 0.2s; margin-left: auto;
+        }
+        .year-filter-bar .filter-reset:hover { background: rgba(244,121,32,0.1); }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <!-- Itaú BBA logo block -->
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFwAAABcCAYAAADj79JYAAAVmUlEQVR42u2deZBcR33HP79fv5nZS6tjtdLqsJBs+ZAsY7tsQGUOiRAgQBVgYIEKRzhcGAiGEMyVGBZVElJUcAVyEDDYFBQmMcY4VRzBDhDZZWMFiPEhyVjYxrYOy7K0klY7e8y817/80e/NsTt7aiULM131dnZn3+vX/e1f/+7uFmZRrA9lJ8J6hJ2Y3EjS+E4J9394RevQ0eGFUeS78slAVyyti8WPLEbyXUJ5EcgCQ+Y7n8zzIu0mrs1ZuQWxgjfJAxGmESKuUXPAErAEsbKalbzIqCcaUfNDSjKYSOGYWHJUzQ6XNXc4J+WDMYWDEfFBcm0HB0tRf0db5xH554dHK1U26InfRMRmYCf2mfXYli34mWIn0wIYhF6UA4jcRtyoGrtiaXdpdOA0TWy1aHK687baG6tU6PHmu0EWgHWoWoQKiAeUug4ajT8BzKbohYzv1dhPq/1dwBveSwkYVDjs4SnQfQi7zeR3LnKPlNBH865rj/zb7sNjB8JA2IRjCcaNeGk0UjMBPAO6noKFofcsWJVj9Dzx8YVidoGKne1hlap1ohZwtPTyY34PFXukQeNsTHtkegTRoB4bSw8N3yUokqIg6fjLmEGJwXv6UR4DecDQe5zK3USdO+RLB/fXYmy9uIln+xSAWx8q6ZSxD69sjQcPvVQtfrmabfTGOZpL2lCpAplUOuorHRakAqIgBjI7BE9oscogSc3v1QF3aDoY2YAk4GMZQHQHwp0a6X+x9BNbZcsWb30oW7CJqF0mA9t6e12y4OYPOOwDKGtRC8AmgDcP4iugSh1tPNOKpQPiUxgVRXGAAxLBG/eo5T4vXxu9HgwzRBrMLJkI7KE/XfCsQtuxb2nev4AS4CWjYX2GgzuTmZHNZiWH4gRflpt0uPNdcn3/QCPQZZz2sQXjstYVyOjtOFvDqJQBh1QkXLM0ht8DnlYiP+p+rqOLXsYZTw6PZS9aJyAB+jY5fOkGHAFsIdcEe1r6niJEDFPSgr/E5w99Wbbg6a3HrvpHH0624Nm77TJa7BJGCWA3y0yBzzNsseb9W8vvLPyx3Ehivbg6wA2ELSS7rlhbIEmupIyl4qBZZge6YJiSfAIE1o9lKb1BwVszvPv55OwMYqzJRo6rKGVAeNHw+zpPly0EdbEC+PrAvxX/UpzVmijNMlsaNxLN+1yuNLIJBLbWAg4eBBLbiK/o1M1yfJAD4MwuqSN9A5Et+INvWdgJtiE1TJvs5PjVRMWDF3+R4YXbArKaqS1dheGz1LE4taWaFD4XgjMBNX/m4AeXLhEwM0Qz/p2IP48cYJM7X5plBpB7PBEdHUNDZwHwRlRr/nv+NLyLzTKz4nGQWHlDppwoOwPKiq1LmUmTncw9qW+oCM1gCfU6b3ZG6mJtAj6XfDw4uM/OKF4Bit1buzGW45sUPseaiqQurdXW2+tkSwp4fmRwpUa0pq7GJuBzT+HLBjt/tLiib4uwCmeANS3Mubc4TR1tebPlVcAtWY2CR5pqygnRVAzFnVYFXGUVFszOZjkhNieipSrgWLKyyb1PbHGelRXA1aynEqdulhNB4yDJioB136bIQ3eaO9IE/MQITrxJT6DwgV93qrCgqYOfQF3cDMQWg6IjRRZ6ZF7TjXIiQRfUbKF9eHmrtlBeqFhLk4efQOPHwBudDJfnaeylCycyLh+vWeZUaKpYGyND81XMd6X2ThPwEyg0QQrlnCxQkEVp4loT8BNq/JiILy5Q50cXNqE+4XAbIgitC9RrYUGTm5wEpiIGjM5XLOlsInJSQAexzkhJ5oW/pknlUpOp3PTmzqh4WuZpYtqBGX4qs14E1EGcwGgM5Th8J/oHSKqzKy4Z7ogQ1wrJ5Jk/AvgERhKsaxEyvwcbGUQOPB7+X4jAPwOpPZvNkl5m4OPUGTUr4NsiR6llypcmgGvDv/Nz8Lw3QUcXlIexh7bBv/8l8th9AfRps5gZsLCTBq6OYZcJJAnEhCusc4BWB5GDJJ7xK1RcawRSmHRJHgLlGH/5tcjGN1cnVKEdzn0J9tFbsU9diAw8CZGOAb2GOrInfVhSecqxonIcgM3SoPLg5y2ARaug5xxYsQFZvg5O2wDf/hBy963Qlgv9maa1GUu+JQpVTzLqozF2+nnoxjeHUVWtTqe4hMxfim16B3zn72F+BEkN4JZAOaWQ4I3ECiCFVohHTy1VuXs19JwFy8/FVmyA5euQJWtg/tJxTlSL8rOaoILlIw85nQzwGOhZHyh3rJBUF75ftr66NrPSKsOiVuheCUvPhBXnwrJ1sOp87OG7kGs/AO0zoJATJQAtwVwL9tGfoktPr2N4FZh9Evi3eXDR5It0JxOafigKy6nNJvCFp4tch/sD0DYGHAsrL23oSFhYLNkgJbCwBz5+G3SvRtyYlStP7koH5xRxToogmvJlH4MoUssKs999oyXS02InAoYXl4vSNZYTKI4eCgq7tmH9e5FFKyAppeAbaBQa+6sbIaI68maQLyA9Z1ZZSybhNQ9J+dTTSHKtgXpdNAmJprNbo1lNJgXSDQMmiiAbOEWKx7CvvBX78xuQziX1ToKb/hq573Zoi8LUy1iOGZSHIddSowFQLwNOGQZu2O57obgsZZ0TMFmfBDY6dCSFa+asJZryKe+hNUJ2bMX6LsIuei10nwHFfrj/x8hvfwltKS8n5fG1V0MVcMx9tQPciD9WprZOWB1ZHtN0VNPad0qEWIx98eUhJGBT2zyCQmuU0qlO3O7GgFsyJS/1HnIgB/bAf/5LtVE5oIUq2D4J/LtMoO4J64uh5KE0Ur+ayKUzoDIHXapPlUOdSQ3YUj9OSEo+BQVxkwvjcjwOWM3qjCagbvNU99FIB1Zq9HOn0wTcphGrN7CFy6Ewr54dmEFSRg7vhjjB2hfCvCVQKsHilQ2qTb9pm48tXwPt+QB+RnXFfqR4GDQdvMEEFGz+fFh9FvScjS05Heb3IC3tgd+Wy3DsIOx/EB75BfL4vVD2gcU1pDwJKmCUq/+fSFBzD+8ez17NINeKda8cM1AW2j18GBk8WKX2Rt7ClHIleZfboc7WE+MbLhVUhaEY+8gP4II/SXVxV9FQGD6KfPrZsHsf/tIPIW/6fBCKLodMJIDMY0nqi7GU4l0Of/NncN/9O5iXw1wrXPwGuPDVcMZzkAXLp8GKDR7+X+yWf0Tv+g7kJbTf0ilgHlwO+5vt0L2myq/TT9t9L7LlYkR1nC3iz7gIPrUNsRp5l8QQ5bBbvoB+80qYV0NA9SUhh/NlvTlCmJbKIC4KQI/VxaNc/eC4KDR4MktSFIlq7C3vwrPqwvQcLWMbNsNl19ZQgAXWZjYhBxSNYO1GWHsD/sJXo1+7LB38+s00JMq0EavXut0U2oeL6l+tge2Zc9Pya8WajyPMStNShy3dZSYzgDIKrxNS6RT2SWjMZNpI7XT2SXqvH68VmK+qYdKAcY8lAJ8EKrzkLfh8G/rF14Nz9VPdfE1ftP5zKt5aq9FZuqvRNAWm+HhUQUZm6EVvcI3RKESmVv1q7xvrbxmrTVhSBVZdemUzLgUq67S6QIlxCb34Uuxl74VinII+VT/k+Ps/2QQRPxyZumGYuedrcl/xDPVs0fHPZTOoxkq1/r3QvxsGDmClIaR1HvSsQ1KTvI76XOq9fNUnsTu+iZSHn37D1mw4EvNDxx219wm0gm77FvbAz7BSDF3L4S++j0SFKhCp4WD3/gC7/pNBk8isUFFk4EmsNUJGghC1kUFs+3/D9lvgoW1w8BFk+BiUCSFCBWtpwc57BbzjX5EFNYZLSvmy6DRs3Wb4xQ9TzeXpLFExUrPBORi6IOyOPoX0PwVlsKGDDXhb+nexH3l4O8xjnB4uzkFekMd/hVx1LrL38fBYLr3yOWhxFQ1HzMPPb8ZG++GjP6nn56m8sbM3I9t++LRbuAluMIopHIsYmaMBjILhoDHk2yfhIFEwUPJjvYWp0HWCHHsqDEZHruoaSGIolYPuXTtQOZC7bsMevB1Z90dVEzydurLsnGBUmQ9G0dPlrpGRgUi1fGQufRIVK2wqiW+T3GeZ8EspsjwKw8GqtaWnw7J12JI10LksGEDqoFiEjiUNtBmwjsUQEbSXpyPuYQgmlHxhIDKTI5ySJbXiBstYVze87O3wnF5YdT6Sb5lcNI+xAcTp081NBDPM6dEIon4snk73T66QFxfAfvGfQe9nkYXLx+javl4dhKDR6Cm4kVG6fFA1PhIZcX9l9YOcROqdrKhCsYx/42eQS/vS3RfS8F5F7fv92o7LmySmLUci0/whLObkbrk0yciqg2IZu+R1AewM6FqzWxxWPAJ7tkP/HmR0ACPCzn0J2v2sqg5/qvBGQdQY9tjRKCfWT2IxItHTn7kQdHVrLcDrPxuEXGZhpq4FS2L43qfh9m8gR/cHm01AjoF95Guw+d2pZRqdNBqZ1rPG4GjbioFoyBcOtzAypFjnyWPVE7xGFYbLsO4iWHZ26kdxVa1GHXz3r5AbroYFhFyYFgHNgZRnwGYmoKyoUPXB17ogvCBt8+st4Ol31VDEexl46JwXHNO2vDuCyQDKHOfm2IRkYm2LgqmYhdsyHwlplsDyc4Pha77GsHKYT+Dum0M6RpQL//cJWAxWRuZ3T0yOWbjVeyxJGpNv1yqY1w1eKvHa4HM3bO0L06ianyl1GwJqdujiy79aVr50oIhYf4bF3KhzQGkQSsP12GcO+tOfi3V1wZHRNEIUB8pOfclW6BgDmlTMf8u3QRynzqsIojwUS9jyVXDWCyr3TSSMpRRjg4fGtCuwMim0w6bL4EgSgihxAoeHsZ4eZPN70rrd7Dil6AEwVMI+YwfSrZqPH3ALgWeO9QdHU23PUreudHTBFTdj522CRadB9yrs7OdCx6IwXsWDDQ0lEYFXfiyQzNFhGCzBkRFs/hK47FtIy7x0wGViVbMM7NsRghW15qqmXsfX9GFvuwrrOQe6VmPPezV87CepWjorYRwiaiZPQIhpgrBv7ig8ddQXS9iuO+C0Z4fAQRbzSwWgnPVCuGorjA6F7/It2N9uRPY/BXvuG2+Gp1EmueRt2LJ1cM+PYOgwLF4Dz3tDiAhVTPopZt99P0RedFnYkL2WDEUQUXjd38BrPwPlUaTQVnXQzUbHz7zG6J4UcMBk95xaN2nQmTu+ir3k/SlR1FReCVwIZB0ixEcpgDx6P/6hu9Azn5/mslQDEGIeWXMxrLl4vMdyKkC8h1ZF7/kxtv+3IW9m3HNpZEldaFtmYOkstZ7suATH7gA8YOhjU6o+tb6PsVeje1si5MF74JarQ2OTpJoyllF6FjmymmCvAN6Q/7gS75P02bj+Oe/Dd0kcchQzt++h3TWCtFEbg/BleASuvyJN/pJUdtSkA2SaSlaXRtjhvYH3N6zfJqNwxUPsXRVwJzyantUwsfGTawuddbmqViEKhY7GfM1byGf59sexn10TpH0WE806k4W6pCZPxQOteeSBbfClN2OjxfBsNit8EnhvpkFEBUwddv1H4M5v1Lcta2u+rX4mtOWQ/7sF+/rlgYtrVPXX+zTdLRO+Loc98SBc/cpq1llWf5QPn7nCZPxbKeMT1b1VluJyu4ljQ0wnnBb7d8L8RZXcuwprGBkMWoNMwC8jkGsvx+77Prz4/bB2I9K+sDJIlRWixw7AaLGa/N+eQ3/+XWzfA9irPgHnvyII27EZDI/8EvvR59Cf3oRd+l5sz31IXAogWjpD9t5f/1xW/63XYHt2Yq+5Clm3eRxwNngIfvEd5KZPQ/Egtud+GDgQZliq2eBycPCxNJm1AaUr+ITDg8O5/RUmYles7aT4u0dQ34WXxpzc/MQiVXUavpEYU6BrCXQ9C9oXBOFdGoHiITiyDxkaqH+zOhgNSUDW3Q0rN2CLTkNyLTA8AE/8Bh6/Fxk1aM9YzwS2VaM2qgvqqICtWIutOA/pXBxSrvt3w+57kAMHoADkokBYExFkI1XU8ORQH8u97jp/gWGSnjwilrxTf605u4DyBPkpx1syvpglvvuaxmo61xqBkvH6cpp95anPtMqnU7wukCEzc5QZUIrr8tjRLMqUm5pPT1xi8kS+pN9z18Wvt15cxCYct1ms6nah8QXpPmRzD3gGSOTGZ6RXUjCMCWdW5TkZL8jHpbXZzDQqgHwEhbpDfCaoexYeDJOdQLoz5+Ys3sb2k7L0Jstbqb2mQ0GV5+IawTaHC7kycCv1J7NOvK/zgxuYuu0AbAVla2qrqLu3uUnN3DNSymJJ4gKFb8Yrm1NuKrkdviwxabi1idVxu5TCiUfG/ny+82EAtmDh3B6AZRc+hvFoCncT8OP3n3sceGSHXPPEkPWFczZUwKwXJ1tuixG5G5fe3CxzQeGmItuqGvmYQzdM3R2n4prV31v+7ZEYvROgum14qhwBxC7/Y0oSI80zfI6bvh3iy/JUZB0B8BtTLwJAOFkQ1/KVY7/Fy63kEOYuw/MPEe4kYKjXy3WHjtkmoixDfbyBI7k+S2QWFkSzVMx5h/oSA0rnPxhIRROsBTw7M0yuG/6VT1wfrUSYxU2NZYZgC0ZOVMm/T647tI/e6kGwDT3g4ZhZSezd+k8U/BWMCnhiQJvHhU1gvWdHO0ZEqJCUcldGXx+92npt3JG94wCUG0msz1SuTT5IKf8+LxyiJVSVKjthQwuruJH+EBU+n8q4WAByKC1EwO/iUv510ddHGoLdkMIrtaYnxxbfvmhFS0vxciXuxTiHXKrTJEY6ruFn6qVJnQPPhBNlrXJOcpWtVo/mTUnVl8UQ+bWh1ztdea1c88jRyQ6jnvzU75oH7T0X5cpu5wWa+I3O2yXgz8dsDREtlXmShD0/0zNSq2d+V33TWdRBxnht5CRygOrP8YdOZz9dxUWrNXwgEXxCEeNhRO423J0uF22TLw9tr1Q6xcnfU3bUDGEzbux59tbXpyP7v7AqisvniPPnSuLXK8mZXliFZ6k6WnBjlvj52s/KwNQGDap/HW/KRs1p43VQTnZl7QlHqxcV9nvRx4Bdhu4wx46StO9q/8rhvePOuN9ExG0kU51tLzMgDaEvHfedWONRFHZdcUbhzFL/YnSkJy7HKyORFd6zQsWWebMlGIsRW6De5nmkXbEWhDxqEmKblbfNAS1n+1SBN/XgSyDDCkVEB7z5I4gexOwA6vYpbm+s7I2EPRQ69m9duO7Qi7fcHjfC0HpxHAgqX60WMrWLZfb9CQOwE2E9wtbgfpz85eF1/9P3ouj8J3a3F0aOdLio3JGQn9cmRzqQQkfJFzryMtiKWFti2uKJWkxcXs1HUTIUYrCikfegQuwBr21lxMdmSSmnfiTBj2JuKKFtKG/FQZwOlvIdx/Lx6LFi68LB9lzrIM/5zZC8UZOpzI304FGtmOfrsZkAPLb8P8oZ0kF1KVPQAAAAAElFTkSuQmCC" alt="Itaú logo" style="width:46px;height:46px;flex-shrink:0;display:block;">
+                <div style="line-height:1.25;">
+                    <div style="font-size:17px;font-weight:700;color:#ffffff;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.2px;">Itaú BBA</div>
+                    <div style="font-size:12px;font-weight:500;color:#bbbbbb;font-family:Arial,Helvetica,sans-serif;">Equity Research</div>
+                </div>
+                <div style="width:1px;height:36px;background:#444444;margin:0 6px;"></div>
+                <h1 style="font-size:20px;color:#ffffff;">Financial Models Dashboard</h1>
+            </div>
+            <div class="header-buttons">
+                <button onclick="exportToExcel()">Download to Excel</button>
+                <button onclick="openUploadModal()">Update Data</button>
+            </div>
+        </header>
+
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('consolidated')">Consolidated Tables</button>
+                <button class="tab-btn" onclick="switchTab('consolidated-charts')">Consolidated Charts</button>
+                <button class="tab-btn" onclick="switchTab('bradesco')">Bradesco</button>
+                <button class="tab-btn" onclick="switchTab('santander')">Santander Brasil</button>
+                <button class="tab-btn" onclick="switchTab('banco-brasil')">Banco do Brasil</button>
+                <button class="tab-btn" onclick="switchTab('btg-pactual')">BTG Pactual</button>
+                <button class="tab-btn" onclick="switchTab('nubank')">Nubank</button>
+                <button class="tab-btn" onclick="switchTab('inter')">Inter</button>
+                <button class="tab-btn" onclick="switchTab('banrisul')">Banrisul</button>
+                <button class="tab-btn" onclick="switchTab('abc-brasil')">ABC Brasil</button>
+            </div>
+
+            <div id="abc-brasil" class="tab-content">
+                <div class="charts-grid" id="charts-abc-brasil"></div>
+            </div>
+
+            <div id="banco-brasil" class="tab-content">
+                <div class="charts-grid" id="charts-banco-brasil"></div>
+            </div>
+
+            <div id="bradesco" class="tab-content">
+                <div class="charts-grid" id="charts-bradesco"></div>
+            </div>
+
+            <div id="santander" class="tab-content">
+                <div class="charts-grid" id="charts-santander"></div>
+            </div>
+
+            <div id="btg-pactual" class="tab-content">
+                <div class="charts-grid" id="charts-btg-pactual"></div>
+            </div>
+
+            <div id="nubank" class="tab-content">
+                <div class="charts-grid" id="charts-nubank"></div>
+            </div>
+
+            <div id="inter" class="tab-content">
+                <div class="charts-grid" id="charts-inter"></div>
+            </div>
+
+            <div id="banrisul" class="tab-content">
+                <div class="charts-grid" id="charts-banrisul"></div>
+            </div>
+
+            <div id="consolidated" class="tab-content active">
+                <div id="consolidated-content"></div>
+            </div>
+
+            <div id="consolidated-charts" class="tab-content">
+                <div id="consolidated-charts-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <h2>Update Data</h2>
+            <p>Drag and drop an Excel file or click to select. The file should match the existing data structure.</p>
+            
+            <div class="drop-zone" id="dropZone">
+                <p>Drag Excel file here or click to browse</p>
+                <input type="file" id="fileInput" style="display: none;" accept=".xlsx,.xls,.csv">
+            </div>
+
+            <label for="bankSelect">Select Bank to Update:</label>
+            <select id="bankSelect" class="bank-select">
+                <option value="">All Banks</option>
+                <option value="ABC Brasil">ABC Brasil</option>
+                <option value="Banco do Brasil">Banco do Brasil</option>
+                <option value="Bradesco">Bradesco</option>
+                <option value="Santander">Santander</option>
+                <option value="BTG Pactual">BTG Pactual</option>
+                <option value="Nubank">Nubank</option>
+                <option value="Inter">Inter</option>
+                <option value="Banrisul">Banrisul</option>
+            </select>
+
+            <div class="loading" id="loadingIndicator">Processing file...</div>
+
+            <div class="modal-buttons">
+                <button class="close-modal" onclick="closeUploadModal()">Cancel</button>
+                <button onclick="uploadData()">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Embedded baked data
+        window.BAKED_DATA = {"ABC Brasil": {"Loan Book": {"2020": 20940.26556336002, "2021": 23253.197781800023, "2022": 25769.87290006, "2023": 24828.52561799003, "2024": 24049.83973280004, "2025E": 24098.067744967753, "2026E": 25744.672422311152, "2027E": 28514.685753354832}, "Total NII": {"2020": 1138.6472434397533, "2021": 1464.537246333873, "2022": 2018.8938618024458, "2023": 2245.2146709306844, "2024": 2375.7257267118566, "2025E": 2546.446419001283, "2026E": 2853.501529100601, "2027E": 3060.1261548380144}, "Client NIM": {"2020": 0.036514901895138153, "2021": 0.039999467480533096, "2022": 0.04417187165393795, "2023": 0.04311108956248281, "2024": 0.03995960997656479, "2025E": 0.039266174314139306, "2026E": 0.040751364045781835, "2027E": 0.042196989149346886}, "Service Income": {"2020": 261.29231690532924, "2021": 330.0386968357333, "2022": 388.3073286099379, "2023": 383.7073793294, "2024": 474.10350625909996, "2025E": 435.2446015149, "2026E": 458.403811479485, "2027E": 495.37142775607816}, "Total Revenues": {"2020": 1399.9395603450826, "2021": 1794.5759431696063, "2022": 2407.2011904123838, "2023": 2628.9220502600847, "2024": 2849.8292329709566, "2025E": 2981.691020516183, "2026E": 3311.905340580086, "2027E": 3555.497582594093}, "NPL Ratio": {"2020": 0.0048377468420926955, "2021": 0.011230190913973526, "2022": 0.00499123203103235, "2023": 0.026124162819399364, "2024": 0.011366693893480377, "2025E": 0.0139, "2026E": 0.023, "2027E": 0.021}, "Cost of Risk": {"2020": -0.014681091435221094, "2021": -0.00744323963139659, "2022": -0.00913690729673019, "2023": -0.013190240688272226, "2024": -0.011572522055765583, "2025E": -0.014665267430971277, "2026E": -0.014906166591671736, "2027E": -0.00788552839261176}, "Provision Expenses": {"2020": -307.4259534135, "2021": -173.07912328619722, "2022": -235.45693973636781, "2023": -327.49422883622145, "2024": -278.3173007454559, "2025E": -353.40460804961504, "2026E": -383.75437597498717, "2027E": -224.85336411448156}, "Coverage Ratio": {"2020": 5.807290149162609, "2021": 2.7714215869362073, "2022": 5.426694662901951, "2023": 1.3369017599801687, "2024": 1.9795981761715078, "2025E": 3.1899999999999995, "2026E": 2.25, "2027E": 2.4}, "Operating Expenses": {"2020": -352.3937182153, "2021": -423.23563677849995, "2022": -600.165291451, "2023": -687.8410921431, "2024": -769.35422823, "2025E": -798.5672065839146, "2026E": -848.3071081752968, "2027E": -875.0991836426547}, "EBT": {"2020": 627.1951695307757, "2021": 1073.174030330943, "2022": 1453.1426626592115, "2023": 1521.6920725674142, "2024": 1712.1337564839534, "2025E": 1678.7662467235466, "2026E": 1914.248589400798, "2027E": 2277.770155707252}, "Net Income": {"2020": 322.076, "2021": 572.7048241982455, "2022": 800.2342412256753, "2023": 851.3976785089001, "2024": 971.2740000000005, "2025E": 1011.4171324290511, "2026E": 1071.672000022464, "2027E": 1161.6697276411708}, "Equity": {"2020": 4288.263, "2021": 4670.656, "2022": 5207.4, "2023": 5885.371, "2024": 6411.114, "2025E": 6704.806976883073, "2026E": 7187.059376893181, "2027E": 7709.810754331707}, "ROE": {"2020": 0.07753488577557335, "2021": 0.1278513231782195, "2022": 0.16202261684397729, "2023": 0.15350495895189756, "2024": 0.15797587684610692, "2025E": 0.15422739039243724, "2026E": 0.15428769219783767, "2027E": 0.15596158352837208}, "Client NII": {"2020": 799.6897285911941, "2021": 986.41320002254, "2022": 1250.5042516407457, "2023": 1364.1501776579275, "2024": 1431.3954184363727, "2025E": 1522.8626902706026, "2026E": 1720.3239022335588, "2027E": 1936.9003686199983}, "Market NII": {"2020": 248.07085190447373, "2021": 316.3802944950565, "2022": 293.57026533657313, "2023": 321.3370728124362, "2024": 440.7752622937446, "2025E": 330.348578694084, "2026E": 331.86600762878817, "2027E": 348.4593080102276}, "NII After Provisions": {"2020": 831.2212900262533, "2021": 1291.4581230476758, "2022": 1783.436922066078, "2023": 1917.720442094463, "2024": 2097.4084259664005, "2025E": 2193.041810951668, "2026E": 2469.747153125614, "2027E": 2835.272790723533}, "Efficiency Ratio": {"2020": 0.251720665803912, "2021": 0.2358415860802051, "2022": 0.24932078541726885, "2023": 0.26164377603932776, "2024": 0.269965027844123, "2025E": 0.26782359442651726, "2026E": 0.2561386938754458, "2027E": 0.24612565845261575}, "BIS Ratio": {"2020": 0.16854701070259318, "2021": 0.15086922139760423, "2022": 0.15234643526897246, "2023": 0.14944958501799607, "2024": 0.16477383584245192, "2025E": 0.16689762292084825, "2026E": 0.16406129355612745, "2027E": 0.15579497369177886}, "Tier 1 Ratio": {"2020": 0.14696641377758274, "2021": 0.13626166575993204, "2022": 0.1311, "2023": 0.12711875962575842, "2024": 0.141354184616753, "2025E": 0.13967652654689042, "2026E": 0.13858123252635718, "2027E": 0.13279013225021555}, "Loan Mix": {"Corporate": {"2018": 8031.3, "2019": 12656.993062800044, "2020": 14849.390454350021, "2021": 16128.803856280017, "2022": 17209.3, "2023": 16894.90625616003, "2024": 15371.619373300022, "2025E": 16126.456368224804, "2026E": 17113.557246317538, "2027E": 18889.26610707606, "2028E": 20446.34911309713, "2029E": 22131.785834603816, "2030E": 23956.15674560761}, "Middle Market": {"2018": 646.6, "2019": 698.3078026300002, "2020": 2089.4929530999957, "2021": 2915.0087978600072, "2022": 4090.6, "2023": 4098.618060879999, "2024": 4006.112957960015, "2025E": 4153.490562587748, "2026E": 4539.948935330898, "2027E": 5109.752523665046, "2028E": 5751.071482304744, "2029E": 6472.881620273749, "2030E": 7285.285289705179}, "Guarantees Issued": {"2019": 9256.057399629999, "2020": 10160.918785500004, "2021": 11068.80908262999, "2022": 11460.1, "2023": 11328.404094760002, "2024": 13514.582104279994, "2025E": 12963.411508737503, "2026E": 13489.777999272399, "2027E": 14601.769537672903, "2028E": 15805.424940485482, "2029E": 17108.300258047573, "2030E": 18518.57440224699}, "Corp. Securities": {"2019": 3692.324886704191, "2020": 3277.2306769800007, "2021": 3393.462496020001, "2022": 6025.5, "2023": 10223.774880500001, "2024": 15606.657248649994, "2025E": 17676.117294465002, "2026E": 18759.876105067935, "2027E": 20706.407603285184, "2028E": 22413.281507864405, "2029E": 24260.856715245725, "2030E": 26260.731537733936}}}, "Banco do Brasil": {"Loan Book": {"2020": 742623.9423413919, "2021": 874905.913380844, "2022": 1004607.4891148128, "2023": 1108578.0091144994, "2024": 1278421.3141001754, "2025E": 1310253.5823466743, "2026E": 1383118.5133058764, "2027E": 1491626.7698543007}, "Total NII": {"2020": 56533.9256246799, "2021": 59377.992973490014, "2022": 73391.50158536018, "2023": 93496.2132196702, "2024": 103943.52295041994, "2025E": 103047.09823805492, "2026E": 108814.6788169328, "2027E": 112094.75417642196}, "Client NII": {"2020": 44418.841327400005, "2021": 43450.96346404999, "2022": 38987.248697929965, "2023": 45365.05122908999, "2024": 58500.073019639975, "2025E": 66777.41963671261, "2026E": 71486.1962734714, "2027E": 77932.52088434173}, "Total NIM": {"2020": 0.038115742281735976, "2021": 0.035253354003172754, "2022": 0.03858153388191177, "2023": 0.04634469138640962, "2024": 0.04707211009644929, "2025E": 0.0446553272318031, "2026E": 0.04510724778594266, "2027E": 0.0433545126066095}, "Client NIM": {"2020": 0.06287907183709658, "2021": 0.05684085778309225, "2022": 0.04271998445746985, "2023": 0.04400531261280254, "2024": 0.05053448492434478, "2025E": 0.052958280516638194, "2026E": 0.05426261939388809, "2027E": 0.05499999999999999}, "Service Income": {"2020": 28701.8883317, "2021": 29343.336213020004, "2022": 32333.174638950004, "2023": 33831.197101269994, "2024": 35477.19187207, "2025E": 34812.0551388491, "2026E": 36147.46720652787, "2027E": 37748.17178571587}, "Total Revenues": {"2020": 85235.81395637989, "2021": 88721.32918651002, "2022": 105724.67622431018, "2023": 127327.4103209402, "2024": 139420.7148224899, "2025E": 137859.15337690403, "2026E": 144962.14602346066, "2027E": 149842.92596213782}, "NPL Ratio": {"2020": 0.01901983658725336, "2021": 0.017511579457055663, "2022": 0.025050455222549603, "2023": 0.029156977990777273, "2024": 0.03315101476469484, "2025E": 0.052, "2026E": 0.051, "2027E": 0.046}, "Cost of Risk": {"2020": -0.030788490717271164, "2021": -0.016206996125122355, "2022": -0.017820290638601816, "2023": -0.02889534129330559, "2024": -0.029909943150017007, "2025E": -0.04800707802717559, "2026E": -0.042957769980960576, "2027E": -0.03564974202366907}, "Provision Expenses": {"2020": -21922.96754387, "2021": -13107.65005198, "2022": -16746.73754581, "2023": -30530.608093699997, "2024": -35697.50702824, "2025E": -62137.358870357304, "2026E": -57850.62947909001, "2027E": -51241.96386420991}, "Coverage Ratio": {"2020": 3.483412201734755, "2021": 3.250090955395474, "2022": 2.270660423564481, "2023": 1.9666343354715556, "2024": 1.7131186864376329, "2025E": 1.617, "2026E": 1.62, "2027E": 1.62}, "EBT": {"2020": 20250.668204159905, "2021": 31298.173768850018, "2022": 48694.92863606019, "2023": 52255.49603650018, "2024": 54231.49960482992, "2025E": 23559.637575208428, "2026E": 33136.041095594235, "2027E": 41074.10330714016}, "Net Income": {"2020": 13878.642932859904, "2021": 20966.909888510017, "2022": 31809.51435444019, "2023": 35561.92884742018, "2024": 38104.215694679915, "2025E": 19038.058021230445, "2026E": 22290.14152337065, "2027E": 27135.34618445128}, "Equity": {"2020": 124567.65160424, "2021": 144857.0, "2022": 164013.98546733, "2023": 173076.08641312004, "2024": 190072.25418276998, "2025E": 189716.44952466013, "2026E": 207152.23673475077, "2027E": 225907.88550597907}, "ROE": {"2020": 0.12004246490664645, "2021": 0.1556421044894472, "2022": 0.20597282264186487, "2023": 0.21099362938243002, "2024": 0.20985482479228584, "2025E": 0.10025605203832706, "2026E": 0.11233005926197372, "2027E": 0.1253190713753471}, "NII After Provisions": {"2020": 34610.9580808099, "2021": 46270.34292151002, "2022": 56644.76403955018, "2023": 62965.60512597021, "2024": 68246.01592217994, "2025E": 40909.73936769762, "2026E": 50964.0493378428, "2027E": 60852.790312212055}, "BIS Ratio": {"2020": 0.21137109775280166, "2021": 0.17764603559827166, "2022": 0.16654860592006293, "2023": 0.15472987481850217, "2024": 0.13754911103261153, "2025E": 0.14531896395634938, "2026E": 0.13836330945290207, "2027E": 0.13672241629174087}, "Loan Mix": {"Individuals": {"2018": 196654.4311167147, "2019": 214069.5001421398, "2020": 228201.9536720852, "2021": 264111.0, "2022": 287793.82792283926, "2023": 310507.76787254424, "2024": 331764.6755870961, "2025E": 358305.8496340638, "2026E": 386970.3176047889, "2027E": 417927.9430131721, "2028E": 451362.1784542259, "2029E": 487471.152730564, "2030E": 516719.4218943979}, "Corporates": {"2018": 221595.56902402424, "2019": 197522.51793819192, "2020": 236409.00088606533, "2021": 253111.0, "2022": 280008.9927040893, "2023": 307252.1938772661, "2024": 346624.8619544463, "2025E": 339692.36471535737, "2026E": 353280.05930397165, "2027E": 381542.4640482894, "2028E": 412065.86117215257, "2029E": 445031.1300659248, "2030E": 480633.6204711988}, "Agribusiness": {"2018": 187192.5900644692, "2019": 179423.11211365822, "2020": 186208.3879331696, "2021": 232429.0, "2022": 286047.06935950124, "2023": 320262.37146130955, "2024": 357513.34413049306, "2025E": 375389.01133701776, "2026E": 394158.46190386865, "2027E": 425691.13885617815, "2028E": 459746.4299646724, "2029E": 496526.14436184627, "2030E": 536248.235910794}, "Foreign": {"2018": 36428.30015096, "2019": 30329.4257277, "2020": 30957.10965058, "2021": 35144.0, "2022": 37433.4332446, "2023": 37327.02478888, "2024": 64738.4585350245, "2025E": 67975.38146177573, "2026E": 71374.15053486452, "2027E": 74942.85806160774, "2028E": 78690.00096468812, "2029E": 82624.50101292253, "2030E": 86755.72606356865}}, "CET1 Ratio": {"2020": 0.13616990725330097, "2021": 0.11940231280450335, "2022": 0.12005193430105864, "2023": 0.12123203780176359, "2024": 0.10891532340765543, "2025E": 0.10970894402397946, "2026E": 0.10651727753415247, "2027E": 0.1071930211291327}, "Operating Expenses": {"2020": 31583.39027414999, "2021": 32026.22524174001, "2022": 33828.29345337, "2023": 36331.422173440005, "2024": 36998.044114000004, "2025E": 38961.43159953399, "2026E": 40909.5031795107, "2027E": 42545.88330669113}, "Efficiency Ratio": {"2020": 0.37054131131208584, "2021": 0.3609754896076282, "2022": 0.3199659214997111, "2023": 0.28533857778041183, "2024": 0.2653697778060155, "2025E": 0.2826176619046416, "2026E": 0.28220817849157603, "2027E": 0.2839365491130465}}, "Bradesco": {"Loan Book": {"2020": 686968.0, "2021": 812657.0, "2022": 891933.0, "2023": 877285.0, "2024": 981692.0, "2025E": 1060321.7400000002, "2026E": 1136867.861625816, "2027E": 1210847.6050666685}, "Total NII": {"2020": 63128.0, "2021": 63980.0, "2022": 66382.9, "2023": 65196.0, "2024": 63726.0, "2025E": 73329.44801091758, "2026E": 81169.24742402365, "2027E": 89055.16023169503}, "Client NII": {"2020": 52140.0, "2021": 55529.0, "2022": 67772.4, "2023": 64885.0, "2024": 61565.0, "2025E": 72430.44801091758, "2026E": 79469.24742402365, "2027E": 85305.16023169503}, "Market NII": {"2020": 10988.0, "2021": 8451.0, "2022": -1389.5, "2023": 311.0, "2024": 2161.0, "2025E": 899.0, "2026E": 1700.0, "2027E": 3750.0}, "Total NIM": {"2020": 0.04395463028378466, "2021": 0.040951939788659866, "2022": 0.039959729674297, "2023": 0.03616886639383508, "2024": 0.033781228700869144, "2025E": 0.037507856218419795, "2026E": 0.03892102909631111, "2027E": 0.04105515520577609}, "Client NIM": {"2020": 0.09468864638266762, "2021": 0.09005244148441666, "2022": 0.09996661578903325, "2023": 0.0937559708049461, "2024": 0.08482922151232615, "2025E": 0.08899858000555164, "2026E": 0.09136784117782765, "2027E": 0.0922}, "Service Income": {"2020": 32747.0, "2021": 34099.0, "2022": 35694.0, "2023": 35642.15176582882, "2024": 38344.0, "2025E": 41705.42852754632, "2026E": 44199.329872804505, "2027E": 46423.05423394442}, "Insurance Income": {"2020": 12121.0, "2021": 11451.0, "2022": 14762.0, "2023": 17878.0, "2024": 19221.0, "2025E": 22554.752, "2026E": 25039.57640611019, "2027E": 27241.722784328635}, "Total Revenues": {"2020": 107996.0, "2021": 109530.0, "2022": 116838.9, "2023": 118716.15176582882, "2024": 121291.0, "2025E": 137589.6285384639, "2026E": 150408.15370293835, "2027E": 162719.93724996812}, "NPL Ratio": {"2020": 0.022055173794965466, "2021": 0.02842794559357826, "2022": 0.043076880890756224, "2023": 0.051968860453956295, "2024": 0.03988135026737968, "2025E": 0.041, "2026E": 0.041, "2027E": 0.039}, "Cost of Risk": {"2020": -0.03931870438778958, "2021": -0.020051679586563308, "2022": -0.03789415636604697, "2023": -0.044703366119946776, "2024": -0.031940147726410816, "2025E": -0.03250552966602467, "2026E": -0.032369191044403375, "2027E": -0.0317756807053865}, "Provision Expenses": {"2020": -25754.0, "2021": -15035.0, "2022": -32297.0, "2023": -39545.0, "2024": -29688.0, "2025E": -33188.369102, "2026E": -35560.62498790129, "2027E": -37300.12852835892}, "Coverage Ratio": {"2020": 4.028342958685029, "2021": 2.6089163158198283, "2022": 2.0419775789510908, "2023": 1.653557075804522, "2024": 1.685697325232209, "2025E": 1.7539786498846774, "2026E": 1.5816618403064933, "2027E": 1.6204586039342557}, "Operating Expenses": {"2020": -46423.0, "2021": -46943.0, "2022": -49141.0, "2023": -54230.0, "2024": -59294.0, "2025E": -64252.15156269293, "2026E": -67748.13273553175, "2027E": -70515.22036974251}, "EBT": {"2020": 28038.0, "2021": 39957.0, "2022": 27771.9, "2023": 17711.151765828825, "2024": 24710.0, "2025E": 31596.19201877081, "2026E": 37301.72315844608, "2027E": 44272.17660631884}, "Net Income": {"2020": 19458.0, "2021": 26214.0, "2022": 20680.9, "2023": 16273.151765828825, "2024": 19555.0, "2025E": 24577.061694828943, "2026E": 29195.324148233787, "2027E": 31839.353818612748}, "Equity": {"2020": 145398.0, "2021": 148765.0, "2022": 156011.0, "2023": 162977.0, "2024": 160487.0, "2025E": 172488.47776267302, "2026E": 184166.60742196653, "2027E": 196902.34894941168}, "ROE": {"2020": 0.1385241320884339, "2021": 0.17822771728599449, "2022": 0.13571212956400766, "2023": 0.10202986799396106, "2024": 0.12090990032893924, "2025E": 0.14762085100060218, "2026E": 0.16371741416847838, "2027E": 0.16710547152302316}, "NII After Provisions": {"2020": 37374.0, "2021": 48945.0, "2022": 34085.899999999994, "2023": 25651.0, "2024": 34038.0, "2025E": 40141.07890891758, "2026E": 45608.62243612236, "2027E": 51755.03170333611}, "Efficiency Ratio": {"2020": 0.42985851327826957, "2021": 0.4285857755865973, "2022": 0.42058766386879715, "2023": 0.45680389056891185, "2024": 0.4888573760625273, "2025E": 0.46698397433881367, "2026E": 0.4504285909215853, "2027E": 0.4333532913143766}, "BIS Ratio": {"2020": 0.15805883352979605, "2021": 0.15759142203191773, "2022": 0.14849873045900056, "2023": 0.1582388803656707, "2024": 0.14782763010227348, "2025E": 0.15733634620695883, "2026E": 0.15563572574527418, "2027E": 0.15601607858685615}, "Tier 1 Ratio": {"2020": 0.13774656617526254, "2021": 0.13695734722434927, "2022": 0.12414845035719027, "2023": 0.13232771082303338, "2024": 0.1235619648883478, "2025E": 0.1329403898642144, "2026E": 0.13146275740829882, "2027E": 0.13175767272744562}, "Loan Mix": {"Individuals": {"2017": 174536.97766842175, "2018": 193732.36228089881, "2019": 231468.0, "2020": 257405.6, "2021": 317297.0, "2022": 357614.0, "2023": 360268.0, "2024": 403307.0, "2025E": 451695.17, "2026E": 498563.2234494613, "2027E": 544899.280615011, "2028E": 595541.77293796, "2029E": 650890.9369705602, "2030E": 704545.2828294673}, "Corporates": {"2017": 111350.58476573999, "2018": 120817.20227631977, "2019": 119682.0, "2020": 127023.2, "2021": 138860.0, "2022": 137765.0, "2023": 116971.0, "2024": 129530.0, "2025E": 343244.41000000003, "2026E": 360726.7136353242, "2027E": 375373.66472304007, "2028E": 390615.340759191, "2029E": 406475.8899615307, "2030E": 422980.44106228766}, "SMEs": {"2017": 84191.62193009288, "2018": 93135.61920057607, "2019": 102823.0, "2020": 125882.3, "2021": 153771.0, "2022": 161052.0, "2023": 150002.0, "2024": 185243.0}, "Sureties & Guarantees": {"2019": 77569.0, "2020": 80476.0, "2021": 83972.0, "2022": 98394.0, "2023": 105247.0, "2024": 119049.0, "2025E": 120321.3, "2026E": 125206.827268413, "2027E": 130290.72653488793, "2028E": 135581.05249801776, "2029E": 141086.1869094578, "2030E": 146814.8518535913}, "Securities": {"2020": 77991.0, "2021": 87148.0, "2022": 96609.0, "2023": 97773.0, "2024": 90392.0, "2025E": 88681.86, "2026E": 95992.0972726176, "2027E": 103904.93319372958, "2028E": 112470.04127154441, "2029E": 121741.18970884697, "2030E": 131776.578937517}, "Other": {"2020": 18189.900000000023, "2021": 31609.0, "2022": 40499.0, "2023": 47024.0, "2024": 54171.0, "2025E": 56379.0, "2026E": 56379.0, "2027E": 56379.0, "2028E": 56379.0, "2029E": 56379.0, "2030E": 56379.0}}, "CET1 Ratio": {"2020": 0.12691615186513977, "2021": 0.1249383736518253, "2022": 0.1096127977143116, "2023": 0.11679282670949144, "2024": 0.10510197607141299, "2025E": 0.11378474013175513, "2026E": 0.11392765381828106, "2027E": 0.11550069078119551}}, "Santander": {"Loan Book": {"2020": 479634.1897803946, "2021": 545832.8008371588, "2022": 589720.8462172578, "2023": 643040.2207586907, "2024": 682692.0, "2025E": 704942.7, "2026E": 743101.3083, "2027E": 782399.977083}, "Total NII": {"2020": 51098.50790321996, "2021": 55616.754345216104, "2022": 51827.723634783455, "2023": 53178.69487645427, "2024": 60745.89897885083, "2025E": 62392.28895665372, "2026E": 67401.02466385759, "2027E": 72400.916312274}, "Client NII": {"2020": 43039.93897483225, "2021": 45791.76925621201, "2022": 56066.735022682195, "2023": 55751.4948584391, "2024": 59631.90490633829, "2025E": 65473.86414665372, "2026E": 69101.02466385759, "2027E": 70550.916312274}, "Total NIM": {"2020": 0.06960669662572085, "2021": 0.06882268914029224, "2022": 0.06819377567564035, "2023": 0.06356407196141825, "2024": 0.06487386406098784, "2025E": 0.06059214925886005, "2026E": 0.06259928320189766, "2027E": 0.06485105217241931}, "Client NIM": {"2020": 0.09866875450367982, "2021": 0.09127149170147014, "2022": 0.10407269801794837, "2023": 0.09369365571471452, "2024": 0.09330120734660652, "2025E": 0.09908719754153157, "2026E": 0.09963793854351771, "2027E": 0.09649891780104354}, "Service Income": {"2020": 16606.34317033, "2021": 18877.337262809997, "2022": 19307.882899260017, "2023": 18457.916970839997, "2024": 20916.95732077, "2025E": 21728.557162, "2026E": 22785.60924153934, "2027E": 24339.783392027555}, "Total Revenues": {"2020": 67704.85107354996, "2021": 74494.09160802611, "2022": 71135.60653404347, "2023": 71636.61184729426, "2024": 81662.85629962083, "2025E": 84120.84611865372, "2026E": 90186.63390539693, "2027E": 96740.69970430157}, "NPL Ratio": {"2020": 0.0205, "2021": 0.0267, "2022": 0.03057028446798891, "2023": 0.030780959722252366, "2024": 0.03185233582737815, "2025E": 0.0345, "2026E": 0.034, "2027E": 0.0335}, "Cost of Risk": {"2020": -0.027531194189201833, "2021": -0.027023081067945254, "2022": -0.04214598222801582, "2023": -0.040883337613206665, "2024": -0.03583694135081559, "2025E": -0.0379294044986531, "2026E": -0.03690655849897201, "2027E": -0.03300617126598079}, "Provision Expenses": {"2020": -12556.747086050002, "2021": -13855.638809980002, "2022": -23929.511913856997, "2023": -25199.693448797287, "2024": -23755.09392110785, "2025E": -26316.07891633357, "2026E": -26721.160450704927, "2027E": -25175.478345912565}, "Coverage Ratio": {"2020": 2.9704602751012392, "2021": 2.195903474910956, "2022": 2.30148891720917, "2023": 2.2245693250732064, "2024": 1.978100652234942, "2025E": 2.275, "2026E": 2.435, "2027E": 2.45}, "Operating Expenses": {"2020": -20381.482650260004, "2021": -21210.864284320014, "2022": -22705.111696660002, "2023": -24712.617779679982, "2024": -25837.329872609997, "2025E": -26286.715444684596, "2026E": -27849.139090263514, "2027E": -28601.34650431524}, "EBT": {"2020": 23501.691892539955, "2021": 25024.122220555393, "2022": 15405.35513329647, "2023": 8484.260409273074, "2024": 16882.47992335001, "2025E": 17789.51793367115, "2026E": 20512.218450236032, "2027E": 27121.659402864007}, "Net Income": {"2020": 13470.302798859953, "2021": 16346.582424626737, "2022": 12900.416865556472, "2023": 9382.6461002618, "2024": 13871.695714350008, "2025E": 15682.311780601174, "2026E": 16931.57153017784, "2027E": 19921.657087148003}, "Equity": {"2020": 78968.183, "2021": 78739.563, "2022": 82061.91454077001, "2023": 86084.3305, "2024": 90743.956, "2025E": 96247.68008825058, "2026E": 104713.46585333951, "2027E": 112682.1286881987}, "ROE": {"2020": 0.18727612668037863, "2021": 0.21142812209885412, "2022": 0.16368189202263334, "2023": 0.11355301144017689, "2024": 0.15871580820054693, "2025E": 0.1693101649231832, "2026E": 0.16859944579375244, "2027E": 0.18335185079678268}, "NII After Provisions": {"2020": 38541.760817169954, "2021": 41761.1155352361, "2022": 27898.211720926458, "2023": 27979.001427656982, "2024": 36990.80505774298, "2025E": 36076.21004032015, "2026E": 40679.864213152665, "2027E": 47225.43796636144}, "Efficiency Ratio": {"2020": 0.3010343029647749, "2021": 0.284732169041373, "2022": 0.3191806860576072, "2023": 0.3449718955491526, "2024": 0.31639022982263676, "2025E": 0.31248753023247994, "2026E": 0.3087945284605746, "2027E": 0.29564957243164824}, "BIS Ratio": {"2020": 0.15252126207237898, "2021": 0.1490846392615257, "2022": 0.13944249932669, "2023": 0.14505062855832793, "2024": 0.14283793917197385, "2025E": 0.15158379785513335, "2026E": 0.1550250776609829, "2027E": 0.1573174550798443}, "Tier 1 Ratio": {"2020": 0.1287345735529009, "2021": 0.11638936760299315, "2022": 0.10840134286197459, "2023": 0.11469641970119598, "2024": 0.10961511958029752, "2025E": 0.11759531006420326, "2026E": 0.12270098715584028, "2027E": 0.12654528208711305}, "Loan Mix": {"Individuals": {"2018": 182631.31911302, "2019": 213568.86703252065, "2020": 234556.38736462547, "2021": 275559.0, "2022": 294271.632969245, "2023": 309605.33882101864, "2024": 337662.0, "2025E": 344415.24, "2026E": 365080.1544, "2027E": 383334.16212, "2028E": 410167.55346840003, "2029E": 438879.28221118805, "2030E": 469600.8319659712}, "Corporates": {"2018": 86858.36686467, "2019": 97994.44117047392, "2020": 122505.11757680922, "2021": 125744.40769933039, "2022": 132764.7736894648, "2023": 139603.66364521, "2024": 135358.0, "2025E": 136034.78999999998, "2026E": 141476.18159999998, "2027E": 152794.276128, "2028E": 165017.81821824002, "2029E": 178219.24367569922, "2030E": 192476.7831697552}, "SMEs": {"2018": 35770.020116629996, "2019": 40464.57125274999, "2020": 54593.3324294299, "2021": 61446.17116406, "2022": 62650.707814019996, "2023": 67408.57950845, "2024": 76636.0, "2025E": 82766.88, "2026E": 87732.89280000002, "2027E": 92119.53744000001, "2028E": 101331.49118400003, "2029E": 111464.64030240005, "2030E": 122611.10433264005}, "Guarantees": {"2018": 40761.287, "2019": 41660.77189952, "2020": 46471.44341996, "2021": 49625.0, "2022": 49017.05052680413, "2023": 64277.651968815706, "2024": 65103.0, "2025E": 68358.15000000001, "2026E": 71776.05750000001, "2027E": 72493.81807500002, "2028E": 73218.75625575002, "2029E": 73950.94381830753, "2030E": 74690.4532564906}, "Credit Securities": {"2018": 40714.84054804999, "2019": 38860.40814562001, "2020": 21507.90898957001, "2021": 33458.22197376842, "2022": 51016.6812177237, "2023": 62144.98681519636, "2024": 67933.0, "2025E": 73367.64, "2026E": 77036.022, "2027E": 81658.18332, "2028E": 83781.29608632, "2029E": 83613.73349414737, "2030E": 81105.32148932295}}, "Market NII": {"2020": 8058.568928387704, "2021": 9824.9850890041, "2022": -4239.011387898745, "2023": -2572.7999819848324, "2024": 1113.994072512546, "2025E": -3081.57519, "2026E": -1700.0, "2027E": 1850.0}}, "BTG Pactual": {"Loan Book": {"2020": 93142.81917959449, "2021": 124539.99081693107, "2022": 161450.19729779268, "2023": 203644.97701714924, "2024": 258727.29388965067, "2025E": 296426.0, "2026E": 341426.0, "2027E": 384426.0}, "Total NII": {"2020": 1590.9144583818227, "2021": 2595.136254274755, "2022": 2736.1567904025833, "2023": 5144.433575679061, "2024": 6512.1899797329625, "2025E": 8474.61619375149, "2026E": 10033.782531323606, "2027E": 11722.707680651118}, "Total Revenues": {"2020": 9303.541139385561, "2021": 13901.760713174815, "2022": 17247.08071792082, "2023": 21558.91643990538, "2024": 25054.51367951867, "2025E": 32798.57232290253, "2026E": 38243.967971125894, "2027E": 44017.00245440912}, "Operating Expenses": {"2020": -3802.310104670398, "2021": -5719.61328159278, "2022": -7755.6786269842305, "2023": -9127.001690507634, "2024": -10351.482609064635, "2025E": -12843.694625155882, "2026E": -15475.544547605292, "2027E": -17609.88399508934}, "EBT": {"2020": 1597.2037248368251, "2021": 2440.4027834400003, "2022": 2680.6640016848205, "2023": 3472.974762513252, "2024": 4022.263023269984, "2025E": 5511.113968782553, "2026E": 6331.749488443493, "2027E": 7169.211655841142}, "Net Income": {"2020": 3976.368638433138, "2021": 6342.840042245189, "2022": 7841.887574054105, "2023": 9924.565512029993, "2024": 11789.541605146322, "2025E": 15878.132305218758, "2026E": 17859.21662027409, "2027E": 19890.187659896634}, "Equity": {"2020": 30414.34632133001, "2021": 39299.52993304, "2022": 44207.586, "2023": 51962.10741509, "2024": 59778.576, "2025E": 71978.7755629726, "2026E": 84958.314014722, "2027E": 99543.9720563683}, "ROE": {"2020": 0.164847541553944, "2021": 0.20267049175980628, "2022": 0.19711149150116358, "2023": 0.2189671344335731, "2024": 0.21902300295277066, "2025E": 0.2500720346784923, "2026E": 0.23106064075451305, "2027E": 0.22006419649496373}, "Efficiency Ratio": {"2020": -0.4177835033693932, "2021": -0.3901515217767417, "2022": -0.39338326692457504, "2023": -0.3748485706868964, "2024": -0.36994968352035906, "2025E": -0.36676373541801494, "2026E": -0.38314594929784135, "2027E": -0.3725280624372878}, "BIS Ratio": {"2020": 0.16654229783788813, "2021": 0.15674382709814014, "2022": 0.150582350261159, "2023": 0.17519714275393447, "2024": 0.15659901971281912, "2025E": 0.15656119477175673, "2026E": 0.15402305811123657, "2027E": 0.1565730040077917}, "Tier 1 Ratio": {"2020": 0.1407627387151123, "2021": 0.13599576553680306, "2022": 0.1275900895746115, "2023": 0.12662920894962235, "2024": 0.12313683157022952, "2025E": 0.12493298973310316, "2026E": 0.1229076027793803, "2027E": 0.12494241328896233}, "Loan Mix": {"Loans": {"2015": 15454.042053676272, "2016": 11116.263689611924, "2017": 15527.131003123672, "2018": 20210.325379857866, "2019": 31464.850277341866, "2020": 51116.002731339584, "2021": 69876.17202279856, "2022": 90071.6966455544, "2023": 92093.24458604073, "2024": 103033.32311194253, "2025E": 120195.55193983935, "2026E": 139987.6905017519, "2027E": 157253.17307703733, "2028E": 175781.9836456363, "2029E": 194310.79421423527, "2030E": 212839.60478283424}, "Credit Funds": {"2015": 418.96185539461925, "2016": 312.03470796286143, "2017": 366.0862581735793, "2018": 1194.4420944017997, "2019": 1809.7285709142259, "2020": 2356.19891101161, "2021": 7864.4111886592555, "2022": 9453.081868247456, "2023": 27785.112578713502, "2024": 31676.887245815273, "2025E": 33239.114948419956, "2026E": 38712.471974674525, "2027E": 43487.10257204554, "2028E": 48611.09638385833, "2029E": 53735.09019567113, "2030E": 58859.08400748393}, "Letters of Credit": {"2015": 12856.14986309293, "2016": 8788.727351820507, "2017": 9559.499455718684, "2018": 13724.028325625486, "2019": 16679.785850707383, "2020": 24223.77271168325, "2021": 29492.171607660097, "2022": 42130.64350943457, "2023": 45555.42828472954, "2024": 52310.34288795159, "2025E": 62333.774890026296, "2026E": 72598.0375004095, "2027E": 81551.96871372248, "2028E": 91161.0656255706, "2029E": 100770.16253741871, "2030E": 110379.25944926681}, "Mkt Securities": {"2015": 6524.053803227352, "2016": 4109.835679434217, "2017": 3164.1336543658967, "2018": 2897.4621025001957, "2019": 4639.260200668741, "2020": 7374.575204512581, "2021": 13269.391710056876, "2022": 17952.477422091968, "2023": 26225.450418772216, "2024": 62545.702830361886, "2025E": 69657.55822171441, "2026E": 81127.80002316409, "2027E": 91133.75563719466, "2028E": 101871.85434493479, "2029E": 112609.95305267493, "2030E": 123348.05176041505}}, "BTG Divisions": {"Investment Banking": {"2020": 1327.0350448963522, "2021": 2310.3529685877124, "2022": 1845.7136223760458, "2023": 1619.643495169706, "2024": 2101.6796977838253, "2025E": 2485.4848112391064, "2026E": 2634.4367561356057, "2027E": 3171.0}, "Corporate Lending": {"2020": 1590.9144583818227, "2021": 2595.136254274755, "2022": 2736.1567904025833, "2023": 5144.433575679061, "2024": 6512.1899797329625, "2025E": 8474.61619375149, "2026E": 10033.782531323606, "2027E": 11722.707680651118}, "Sales & Trading": {"2020": 3117.1619406745285, "2021": 4288.183569391323, "2022": 5308.224349345267, "2023": 6234.804746536566, "2024": 5980.893221809486, "2025E": 6851.377440952466, "2026E": 8070.195358267391, "2027E": 9144.184907044877}, "Asset Management": {"2020": 1013.3771080220005, "2021": 1185.6730422753196, "2022": 1554.0756938061504, "2023": 1849.240726817272, "2024": 2389.478396173172, "2025E": 2921.053743851916, "2026E": 3523.529036205277, "2027E": 4135.056935727914}, "Wealth Management": {"2020": 849.5506772898617, "2021": 1526.3012939888326, "2022": 2533.280383733879, "2023": 3074.4104570179347, "2024": 3777.545844160083, "2025E": 5074.215112026211, "2026E": 6361.723780704903, "2027E": 7833.407906321908}, "Principal Investments & Participations": {"2027E": 1342.0, "2020": 1092.2209539131018, "2026E": 1220.0, "2024": 915.1974376391646, "2023": 324.98540641241885, "2021": 1165.1308603476807, "2022": 687.5841786878727, "2025E": 1204.3594091556022}, "Interest & Others": {"2020": 313.2809562078949, "2021": 830.9827243091916, "2022": 2582.045699569024, "2023": 3311.3980322724237, "2024": 3377.5291022199763, "2025E": 5787.465611925742, "2026E": 6400.300508489116, "2027E": 6668.645024663305}}}, "Nubank": {"Loan Book": {"2020": 17257.855, "2021": 36546.596999999994, "2022": 59365.987, "2023": 88411.114, "2024": 128014.33, "2025E": 173467.6839, "2026E": 218886.62912682863, "2027E": 283399.1802131382}, "Total NII": {"2020": 1388.8359999999998, "2021": 3666.257, "2022": 10368.365999999998, "2023": 21992.8, "2024": 36674.907999999996, "2025E": 49457.722912990386, "2026E": 67283.43334639381, "2027E": 80329.45171943796}, "Client NII": {"2022": 6571.700169752207, "2023": 15840.582854662582, "2024": 30433.17569254311, "2025E": 42240.148454878436, "2026E": 56884.57086280745, "2027E": 66969.14919620202}, "Total NIM": {"2021": 0.07145871914714662, "2022": 0.08408739306907137, "2023": 0.13845816139777672, "2024": 0.15714376880854414, "2025E": 0.1560031981741496, "2026E": 0.17493899249139758, "2027E": 0.17472279292142232}, "Client NIM": {"2022": 0.1445115424189944, "2023": 0.23581233478187758, "2024": 0.3180337206433031, "2025E": 0.31375213980819794, "2026E": 0.33102986432706655, "2027E": 0.2972460892484582}, "Service Income": {"2020": 1828.7909999999997, "2021": 3514.486, "2022": 6389.138000000001, "2023": 7938.691999999999, "2024": 10181.144, "2025E": 12777.013843801215, "2026E": 15087.342816789183, "2027E": 17204.408906423185}, "Total Revenues": {"2020": 3217.6269999999995, "2021": 7180.7429999999995, "2022": 16757.504, "2023": 29931.492, "2024": 46856.051999999996, "2025E": 62234.73675679161, "2026E": 82370.77616318299, "2027E": 97533.86062586114}, "NPL Ratio": {"2020": 0.037, "2021": 0.031, "2022": 0.052, "2023": 0.061, "2024": 0.07, "2025E": 0.067, "2026E": 0.073, "2027E": 0.073}, "Cost of Risk": {"2021": 0.020905238826580082, "2022": 0.025234889127030036, "2023": 0.06659297525535056, "2024": 0.08401544390638901, "2025E": 0.08337908992881006, "2026E": 0.0899605544067285, "2027E": 0.08596908203607827}, "Provision Expenses": {"2020": -875.051, "2021": -2593.694, "2022": -7256.787, "2023": -11415.121, "2024": -17067.012000000002, "2025E": -23024.034535442006, "2026E": -32683.628694338357, "2027E": -40804.84757756561}, "Coverage Ratio": {"2021": 2.894907014187943, "2022": 2.310713838419088, "2023": 2.348979297694757, "2024": 2.1949857397103223, "2025E": 2.34, "2026E": 2.34, "2027E": 2.3}, "Operating Expenses": {"2020": -2829.9823462181594, "2021": -5505.303000000001, "2022": -9260.065999999999, "2023": -10828.423999999999, "2024": -14644.636, "2025E": -16773.947272439324, "2026E": -20628.420062733545, "2027E": -23856.338644090603}, "EBT": {"2020": -1009.60634621816, "2021": -918.254000000001, "2022": -1595.9900000000023, "2023": 7687.946999999999, "2024": 15144.404000000002, "2025E": 22425.37894891028, "2026E": 29038.727406111087, "2027E": 32852.67440420492}, "Net Income": {"2020": -897.6363462181599, "2021": -892.370000000001, "2022": -1883.8680000000022, "2023": 5147.647999999999, "2024": 10713.788, "2025E": 15967.611252760373, "2026E": 20327.10918427776, "2027E": 22339.818594859345}, "Equity": {"2020": 2277.52, "2021": 24632.698, "2022": 25810.521, "2023": 31116.684999999998, "2024": 47209.989, "2025E": 60987.21437938547, "2026E": 81314.32356366323, "2027E": 94002.09196518091}, "ROE": {"2020": -0.37833956549113024, "2021": -0.06632201939055277, "2022": -0.07469261626622212, "2023": 0.18085018962638003, "2024": 0.2735667800729034, "2025E": 0.2951575596047733, "2026E": 0.28569064646951303, "2027E": 0.2548514185334101}, "NII After Provisions": {"2020": 513.7849999999997, "2021": 1072.563, "2022": 3111.578999999998, "2023": 10577.679, "2024": 19607.895999999993, "2025E": 26433.68837754838, "2026E": 34599.80465205545, "2027E": 39524.60414187235}, "Efficiency Ratio": {"2020": 0.8795246764830603, "2021": 0.7666759553990445, "2022": 0.5525921998884797, "2023": 0.3617736128890601, "2024": 0.31254523962027364, "2025E": 0.26952708642426776, "2026E": 0.25043372205048814, "2027E": 0.24459545116955092}, "Loan Mix": {"Credit Cards": {"2018": 6857.825, "2019": 12132.215, "2020": 16213.455999999998, "2021": 28783.131999999998, "2022": 48929.281, "2023": 70372.591, "2024": 90253.784, "2025E": 114885.0, "2026E": 131453.28000000003, "2027E": 166355.0784, "2028E": 212439.93120000005, "2029E": 253160.41721241607, "2030E": 305691.20378399245, "2031E": 356722.83795456006}, "Personal Loans": {"2019": 253.972, "2020": 1044.399, "2021": 7763.465, "2022": 10436.706, "2023": 18038.523, "2024": 36203.657, "2025E": 54169.3152, "2026E": 78281.78779050862, "2027E": 98067.4242261451, "2028E": 118387.78716114922, "2029E": 139744.32493890202, "2030E": 151047.03915323815, "2031E": 171525.25399916887}, "SMEs": {"2024": 1556.889, "2025E": 4413.3687, "2026E": 9151.561336320001, "2027E": 18976.67758699315, "2028E": 27783.753655116685, "2029E": 40678.19372645635, "2030E": 59556.94343490477, "2031E": 72391.83697602323}}, "BIS Ratio": {"2023": 0.2594235025455133, "2024": 0.2499778337701562, "2025E": 0.24867940529636276, "2026E": 0.28580376417028563, "2027E": 0.27697415554946647}}, "Inter": {"Loan Book": {"2020": 8790.058, "2021": 17511.710592999996, "2022": 24543.993000000002, "2023": 31020.837, "2024": 41182.81330516, "2025E": 52961.98533137826, "2026E": 68348.7169304647, "2027E": 84451.88677151626}, "Total NII": {"2020": 715.963, "2021": 1589.467912, "2022": 2335.429185, "2023": 3208.2889949999994, "2024": 4393.401326681977, "2025E": 6199.061843317055, "2026E": 8239.7834243985, "2027E": 9896.132485568392}, "Total NIM": {"2020": 0.06876582307963676, "2021": 0.07021631315429792, "2022": 0.06867233494185779, "2023": 0.07737306559651783, "2024": 0.08020369603081157, "2025E": 0.09086250633097559, "2026E": 0.10507623030188439, "2027E": 0.11491912911836018}, "Service Income": {"2020": 185.53399999999993, "2021": 442.27200000000005, "2022": 838.8059999999999, "2023": 1169.414, "2024": 1609.85355029108, "2025E": 1880.729884795731, "2026E": 2405.6561596515157, "2027E": 2971.375615417227}, "Total Revenues": {"2020": 901.4969999999998, "2021": 2221.8219120000003, "2022": 3562.697185, "2023": 4753.390995, "2024": 6400.363876512545, "2025E": 8379.431728112784, "2026E": 11075.518634050015, "2027E": 13340.595055985617}, "NPL Ratio": {"2020": 0.03060972931009101, "2021": 0.02969079825119056, "2022": 0.0407236995153967, "2023": 0.04594886620886471, "2024": 0.042, "2025E": 0.043, "2026E": 0.0445, "2027E": 0.043}, "Cost of Risk": {"2021": -0.04708180220762835, "2022": -0.05392646726246648, "2023": -0.057442023641776474, "2024": -0.05073696189935574, "2025E": -0.05415429247844068, "2026E": -0.059834239523012374, "2027E": -0.05760329354421919}, "Provision Expenses": {"2020": -213.688, "2021": -595.5810597699979, "2022": -1083.237, "2023": -1541.5839999999998, "2024": -1799.4536749999997, "2025E": -2449.280997264495, "2026E": -3500.411522042135, "2027E": -4204.237691654016}, "Coverage Ratio": {"2020": 1.0494077156307164, "2021": 1.3096446595720364, "2022": 1.3190422438713374, "2023": 1.3433963988056736, "2024": 1.3683950322984906, "2025E": 1.4266994447779666, "2026E": 1.547262859483859, "2027E": 1.8066858889817425}, "Operating Expenses": {"2020": -914.082, "2021": -1848.5395199999998, "2022": -2640.6490000000003, "2023": -2739.11, "2024": -3392.68567248, "2025E": -4289.409422231491, "2026E": -5064.251437956875, "2027E": -5583.203047653591}, "Efficiency Ratio": {"2020": 0.9037976861295322, "2021": 0.8201136001069618, "2022": 0.7214852538445499, "2023": 0.5449810671043273, "2024": 0.4922314968965777, "2025E": 0.4807091164950401, "2026E": 0.45724734030852476, "2027E": 0.4185122945582953}, "EBT": {"2020": -7.175000000000082, "2021": -231.06266776999746, "2022": -178.57281500000016, "2023": 440.65699499999954, "2024": 1206.0015290325455, "2025E": 1640.7413086167985, "2026E": 2510.8556740510057, "2027E": 3553.154316678011}, "Net Income": {"2020": 30.53399999999992, "2021": -72.66644176999748, "2022": -11.089815000000172, "2023": 303.15899499999955, "2024": 907.584744587106, "2025E": 1313.8679087211037, "2026E": 1908.2503122787648, "2027E": 2664.8657375085086}, "Equity": {"2020": 3324.215, "2021": 8449.78358724081, "2022": 7089.104, "2023": 7596.691, "2024": 9072.307, "2025E": 10131.734210590488, "2026E": 11965.926975158087, "2027E": 14281.856574416728}, "ROE": {"2020": 0.011131297286094617, "2021": -0.00853642424177526, "2022": -0.0018452389421602638, "2023": 0.0483512267859303, "2024": 0.11401601770121297, "2025E": 0.13855608388119478, "2026E": 0.17242554457009332, "2027E": 0.20165865208948408}, "NII After Provisions": {"2020": 502.275, "2021": 993.8868522300022, "2022": 1252.1921849999999, "2023": 1666.7049949999996, "2024": 2593.947651681977, "2025E": 3749.78084605256, "2026E": 4739.371902356364, "2027E": 5691.894793914376}, "BIS Ratio": {"2020": 0.31918668553886514, "2021": 0.4431082711440708, "2022": 0.2408642707639492, "2023": 0.229501027251763, "2024": 0.1519071209740551, "2025E": 0.13789297758530467, "2026E": 0.13769612399933884, "2027E": 0.1429611807186991}, "Loan Mix": {"Real Estate": {"2019": 2519.153, "2020": 3471.356, "2021": 5121.411, "2022": 6251.813, "2023": 8583.568, "2024": 11250.187, "2025E": 15750.261799999998, "2026E": 20790.345576, "2027E": 24948.4146912, "2028E": 28940.161041792, "2029E": 32991.78358764288, "2030E": 37940.55112578931}, "Personal Loans": {"2019": 1002.386, "2020": 1653.554, "2021": 3579.283, "2022": 5463.781, "2023": 7138.744, "2024": 8236.791, "2025E": 11943.34695, "2026E": 16123.5183825, "2027E": 19670.69242665, "2028E": 23014.710139180497, "2029E": 26466.91666005757, "2030E": 29113.608326063328}, "SMEs": {"2019": 472.304, "2020": 1582.869, "2021": 3017.159, "2022": 3392.5, "2023": 3855.754, "2024": 3968.591, "2025E": 3571.7318999999998, "2026E": 3928.90509, "2027E": 4439.6627517, "2028E": 4883.62902687, "2029E": 5371.991929557001, "2030E": 5909.191122512701}, "Credit Cards": {"2019": 783.544, "2020": 1904.642, "2021": 4798.318, "2022": 6870.565, "2023": 9461.277, "2024": 11799.89, "2025E": 15489.964360960259, "2026E": 21005.975245525795, "2027E": 27593.149738239594, "2028E": 33384.33991855817, "2029E": 39455.53009887675, "2030E": 45806.72027919532}, "Agribusiness": {"2020": 177.637, "2021": 700.191, "2022": 719.669, "2023": 744.958, "2024": 340.834, "2025E": 340.834, "2026E": 340.834, "2027E": 409.00079999999997, "2028E": 490.8009599999999, "2029E": 588.9611519999999, "2030E": 706.7533823999999}}, "Tier 1 Ratio": {"2020": 0.31918668553886514, "2021": 0.4431082711440708, "2022": 0.2408642707639492, "2023": 0.229501027251763, "2024": 0.1519071209740551, "2025E": 0.12630665288880333, "2026E": 0.12871812432093993, "2027E": 0.13569509369472443}}, "Banrisul": {"Loan Book": {"2020": 37605.81358524, "2021": 41041.87420255, "2022": 49121.9, "2023": 53669.3, "2024": 62058.9, "2025E": 65651.06, "2026E": 71062.8186820896, "2027E": 78794.33615160453}, "Total NII": {"2020": 5262.753, "2021": 4845.603, "2022": 4668.795, "2023": 5488.713, "2024": 6375.611000000001, "2025E": 6475.4528123303035, "2026E": 7034.163560815906, "2027E": 7975.819142412444}, "Total NIM": {"2020": 0.06903935939801883, "2021": 0.05538933456481632, "2022": 0.048482379842739474, "2023": 0.05306719069511116, "2024": 0.05268843089469192, "2025E": 0.04502272500987368, "2026E": 0.04518282796878939, "2027E": 0.04620443600803421}, "Service Income": {"2020": 1955.399, "2021": 1972.158, "2022": 2083.514, "2023": 2232.921, "2024": 2312.4610000000002, "2025E": 2161.37298, "2026E": 2291.0553588000002, "2027E": 2428.5186803280003}, "Total Revenues": {"2020": 7218.152, "2021": 6817.7609999999995, "2022": 6752.309, "2023": 7721.634, "2024": 8688.072, "2025E": 8636.825792330303, "2026E": 9325.218919615907, "2027E": 10404.337822740445}, "NPL Ratio": {"2020": 0.0231, "2021": 0.0207, "2022": 0.0158, "2023": 0.0195, "2024": 0.0173, "2025E": 0.025, "2026E": 0.022, "2027E": 0.021}, "Cost of Risk": {"2020": -0.041329313343390614, "2021": -0.020870767347831914, "2022": -0.021573049410038746, "2023": -0.025949383218483245, "2024": -0.023917872708984843, "2025E": -0.01499209160849218, "2026E": -0.01638811881188118, "2027E": -0.018165918561475303}, "Provision Expenses": {"2020": -1501.4959999999999, "2021": -787.794, "2022": -968.69, "2023": -1330.45, "2024": -1334.928, "2025E": -957.8130500000003, "2026E": -1112.5517534280673, "2027E": -1363.707777301279}, "Coverage Ratio": {"2020": 3.180751870548808, "2021": 3.095475261514733, "2022": 3.1474708192362875, "2023": 2.4297699295882613, "2024": 2.3685116145069602, "2025E": 1.6, "2026E": 1.95, "2027E": 1.75}, "Operating Expenses": {"2020": -5134.867, "2021": -5247.428, "2022": -5926.866999999999, "2023": -5831.8, "2024": -6516.261999999999, "2025E": -6712.178106389364, "2026E": -6936.220483930863, "2027E": -7498.499561981282}, "Efficiency Ratio": {"2020": 0.5925010697760759, "2021": 0.6309784507762299, "2022": 0.6989509938486808, "2023": 0.6199176868586808, "2024": 0.6219105210950812, "2025E": 0.642150736658153, "2026E": 0.6220122478303288, "2027E": 0.5969626526045968}, "EBT": {"2020": 1095.4249999999995, "2021": 1356.0329999999994, "2022": 767.77, "2023": 1211.4929999999997, "2024": 1367.904, "2025E": 1741.4441793273636, "2026E": 2082.4641958262478, "2027E": 2434.47750927712}, "Net Income": {"2020": 727.4759999999994, "2021": 948.5349999999994, "2022": 714.9050000000001, "2023": 870.5059999999997, "2024": 915.5090000000002, "2025E": 1279.1858819426075, "2026E": 1416.0756531618485, "2027E": 1606.7551561228993}, "Equity": {"2020": 8346.215, "2021": 9048.583, "2022": 9420.127, "2023": 9668.891, "2024": 10413.708, "2025E": 10696.845529165565, "2026E": 11546.490921062674, "2027E": 12510.544014736412}, "ROE": {"2020": 0.08918720449097577, "2021": 0.10932878911186752, "2022": 0.0786548181586817, "2023": 0.0916697623207418, "2024": 0.09111032327635198, "2025E": 0.12056372014579754, "2026E": 0.12535222765617723, "2027E": 0.1314700978112238}, "NII After Provisions": {"2020": 3761.2569999999996, "2021": 4057.809, "2022": 3700.105, "2023": 4158.263, "2024": 5040.683000000001, "2025E": 5517.639762330303, "2026E": 5921.611807387839, "2027E": 6612.1113651111655}, "BIS Ratio": {"2020": 0.15813831169110623, "2021": 0.18424661388123506, "2022": 0.17568860151425683, "2023": 0.16761315688323464, "2024": 0.17207235969759563, "2025E": 0.17048852880756246, "2026E": 0.16790179358554955, "2027E": 0.162065985648699}, "Tier 1 Ratio": {"2020": 0.1499009496436482, "2021": 0.15044811547416065, "2022": 0.14761364536636767, "2023": 0.13589466132003508, "2024": 0.13781247138996844, "2025E": 0.12936902319052013, "2026E": 0.12991372640077345, "2027E": 0.12780541233489223}, "Loan Mix": {"Individuals": {"2018": 19478.54243992, "2019": 21731.776706710003, "2020": 22277.96859661, "2021": 23129.0, "2022": 25517.5, "2023": 26127.2, "2024": 28579.1, "2025E": 29568.372, "2026E": 32005.756771643522, "2027E": 36022.76121720194, "2028E": 40543.93511048712, "2029E": 43886.05925654441, "2030E": 47503.68191494937}, "Corporates": {"2018": 6227.6, "2019": 6083.3, "2020": 6609.400000000001, "2021": 7216.4, "2022": 8894.4, "2023": 8705.6, "2024": 9237.9, "2025E": 10615.077, "2026E": 11490.10072567632, "2027E": 12932.209594536094, "2028E": 14555.315831416903, "2029E": 15755.141954882794, "2030E": 17053.872337330406}, "Real Estate": {"2018": 4112.7, "2019": 4126.9, "2020": 4125.6, "2021": 4319.8, "2022": 5139.7, "2023": 5961.4, "2024": 6549.1, "2025E": 6707.772, "2026E": 7260.708134747521, "2027E": 7859.22398942433, "2028E": 8507.076798796395, "2029E": 9208.333514607068, "2030E": 9967.39633621652}, "Rural": {"2018": 2459.2, "2019": 2661.3, "2020": 3392.2000000000003, "2021": 4836.7, "2022": 7879.5, "2023": 11359.1, "2024": 13701.2, "2025E": 13752.251, "2026E": 14885.87875479216, "2027E": 16112.95389404779, "2028E": 17441.17948751456, "2029E": 18878.893585618083, "2030E": 20435.121562290726}, "Other": {"2018": 1785.6933329700003, "2019": 1579.3999999999942, "2020": 1200.6449886300002, "2021": 1539.97420255, "2022": 1690.800000000003, "2023": 1516.0000000000036, "2024": 3991.5999999999985, "2025E": 5007.588000000002, "2026E": 5420.374295230082, "2027E": 5867.187456394375, "2028E": 6350.832391549869, "2029E": 6874.34522338329, "2030E": 7441.012348732457}}}};
+
+        // Chart.js global options
+        Chart.defaults.color = '#999';
+        Chart.defaults.borderColor = '#333';
+        Chart.defaults.font.family = 'Arial, Helvetica, sans-serif';
+
+
+        // Fix 2: Guarantee YoY line series render on top of bars
+        const yoyFrontPlugin = {
+            id: 'yoyFront',
+            afterDatasetsDraw(chart) {
+                chart.data.datasets.forEach((ds, dsIdx) => {
+                    if (ds.type === 'line') {
+                        const meta = chart.getDatasetMeta(dsIdx);
+                        if (!meta.hidden && meta.controller) {
+                            chart.ctx.save();
+                            meta.controller.draw();
+                            chart.ctx.restore();
+                        }
+                    }
+                });
+            }
+        };
+        Chart.register(yoyFrontPlugin);
+        Chart.register(ChartDataLabels);
+        Chart.defaults.plugins.datalabels.display = false;
+
+        const BANKS = [
+            'Bradesco',
+            'Santander',
+            'Banco do Brasil',
+            'BTG Pactual',
+            'Nubank',
+            'Inter',
+            'Banrisul',
+            'ABC Brasil'
+        ];
+
+        const BANK_IDS = [
+            'bradesco',
+            'santander',
+            'banco-brasil',
+            'btg-pactual',
+            'nubank',
+            'inter',
+            'banrisul',
+            'abc-brasil'
+        ];
+
+        const COLORS = {
+            historical: 'rgba(30, 30, 30, 1)',
+            historicalBorder: '#000000',
+            estimate: 'rgba(244, 121, 32, 1)',
+            estimateBorder: '#F47920',
+            lineBlack: 'rgba(30, 30, 30, 1)',
+            lineGray: 'rgba(140, 140, 140, 1)',
+            lineOrange: 'rgba(244, 121, 32, 1)',
+            lineBlue: 'rgba(70, 130, 180, 1)',
+            lineGreen: 'rgba(34, 139, 34, 1)',
+            estimate_dashed: [5, 5]
+        };
+
+        const CHART_YEARS = ['2020', '2021', '2022', '2023', '2024', '2025E', '2026E', '2027E'];
+
+        // ── Year Range Filter State ──
+        // Global filter state: { tabId: { from: '2020', to: '2027E' } }
+        window.yearFilterState = {};
+
+        function getFilteredYears(tabId) {
+            const state = window.yearFilterState[tabId];
+            if (!state) return CHART_YEARS.slice();
+            const fromIdx = CHART_YEARS.indexOf(state.from);
+            const toIdx = CHART_YEARS.indexOf(state.to);
+            if (fromIdx < 0 || toIdx < 0 || fromIdx > toIdx) return CHART_YEARS.slice();
+            return CHART_YEARS.slice(fromIdx, toIdx + 1);
+        }
+
+        function buildYearFilterBar(tabId, onChangeCallback) {
+            const bar = document.createElement('div');
+            bar.className = 'year-filter-bar';
+            bar.id = 'year-filter-' + tabId;
+
+            const state = window.yearFilterState[tabId] || { from: CHART_YEARS[0], to: CHART_YEARS[CHART_YEARS.length - 1] };
+            window.yearFilterState[tabId] = state;
+
+            const lbl = document.createElement('label');
+            lbl.textContent = 'Period:';
+            bar.appendChild(lbl);
+
+            const selFrom = document.createElement('select');
+            selFrom.id = 'year-from-' + tabId;
+            CHART_YEARS.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                if (y === state.from) opt.selected = true;
+                selFrom.appendChild(opt);
+            });
+            bar.appendChild(selFrom);
+
+            const sep = document.createElement('span');
+            sep.className = 'filter-sep';
+            sep.textContent = '—';
+            bar.appendChild(sep);
+
+            const selTo = document.createElement('select');
+            selTo.id = 'year-to-' + tabId;
+            CHART_YEARS.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                if (y === state.to) opt.selected = true;
+                selTo.appendChild(opt);
+            });
+            bar.appendChild(selTo);
+
+            const resetBtn = document.createElement('button');
+            resetBtn.className = 'filter-reset';
+            resetBtn.textContent = 'Reset (2020–2027E)';
+            resetBtn.onclick = function() {
+                selFrom.value = CHART_YEARS[0];
+                selTo.value = CHART_YEARS[CHART_YEARS.length - 1];
+                window.yearFilterState[tabId] = { from: CHART_YEARS[0], to: CHART_YEARS[CHART_YEARS.length - 1] };
+                onChangeCallback();
+            };
+            bar.appendChild(resetBtn);
+
+            function handleChange() {
+                const fromVal = selFrom.value;
+                const toVal = selTo.value;
+                const fromIdx = CHART_YEARS.indexOf(fromVal);
+                const toIdx = CHART_YEARS.indexOf(toVal);
+                if (fromIdx > toIdx) { selTo.value = fromVal; }
+                window.yearFilterState[tabId] = { from: selFrom.value, to: selTo.value };
+                onChangeCallback();
+            }
+            selFrom.addEventListener('change', handleChange);
+            selTo.addEventListener('change', handleChange);
+
+            return bar;
+        }
+
+        function getYearVals(obj, ys) {
+            if (!obj) return ys.map(() => null);
+            return ys.map(y => (obj && obj[y] != null) ? obj[y] : null);
+        }
+
+        function isEstimate(year) {
+            return String(year).includes('E');
+        }
+
+        function normalizeValue(value, metric) {
+            if (value == null) return null;
+            // Cost of Risk: always positive %, handle before general % check
+            if (metric === 'Cost of Risk') {
+                let v = Math.abs(value);
+                if (v < 1) return v * 100;  // e.g. -0.03 → 3.0%
+                return v;                    // e.g. 3.0 → 3.0% (already %)
+            }
+            if (metric === 'Coverage Ratio') {
+                let v = Math.abs(value);
+                if (v < 10) return v * 100;
+                return v;
+            }
+            if (['NPL Ratio', 'NIM', 'ROE', 'Total NIM', 'Client NIM', 'BIS Ratio', 'Tier 1 Ratio'].includes(metric)) {
+                if (Math.abs(value) < 1) {
+                    return value * 100;
+                }
+            }
+            if (metric === 'Efficiency Ratio') {
+                let v = Math.abs(value);
+                if (v < 1) return v * 100;
+                return v;
+            }
+            if (['Provision Expenses', 'Operating Expenses'].includes(metric)) {
+                return Math.abs(value);
+            }
+            return value;
+        }
+
+        function getChartData(bankName, metric) {
+            const data = window.BAKED_DATA[bankName];
+            if (!data || !data[metric]) return null;
+            return data[metric];
+        }
+
+        function computeYoY(values, years) {
+            return years.map((year, idx) => {
+                if (idx === 0) return null;
+                const current = values[idx];
+                const prior = values[idx - 1];
+                if (!current || !prior) return null;
+                return ((current / prior) - 1) * 100;
+            });
+        }
+
+        function createBarChart(ctx, labels, values, yoyValues = null, metric = '') {
+            const datasets = [];
+            const barData = values.map((v, i) => {
+                const isEst = isEstimate(labels[i]);
+                return {
+                    x: labels[i],
+                    y: normalizeValue(v, metric),
+                    isEstimate: isEst
+                };
+            });
+
+            const backgroundColor = barData.map(d => 
+                d.isEstimate ? COLORS.estimate : COLORS.historical
+            );
+            const borderColor = barData.map(d =>
+                d.isEstimate ? COLORS.estimateBorder : COLORS.historicalBorder
+            );
+
+            datasets.push({
+                label: metric,
+                data: barData.map(d => d.y),
+                backgroundColor: backgroundColor,
+                borderColor: borderColor,
+                borderWidth: 1,
+                yAxisID: 'y',
+                order: 0
+            });
+
+            if (yoyValues && yoyValues.some(v => v !== null)) {
+                datasets.push({
+                    label: 'YoY Growth %',
+                    data: yoyValues,
+                    type: 'line',
+                    borderColor: 'rgba(120, 120, 120, 1)',
+                    borderWidth: 2.5,
+                    borderDash: [],
+                    fill: false,
+                    pointRadius: 5,
+                    pointBackgroundColor: 'rgba(120, 120, 120, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                    order: 2,
+                    z: 10,
+                    datalabels: {
+                        display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                        formatter: function(v) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : null; },
+                        color: '#1a1a1a', font: { size: 9, weight: '600' },
+                        backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                        anchor: 'end', align: 'top', offset: 2, clip: false
+                    }
+                });
+            }
+
+            return {
+                labels: labels,
+                datasets: datasets
+            };
+        }
+
+        function createLineChart(ctx, labels, datasetsConfig) {
+            const datasets = datasetsConfig.map(config => {
+                const baseColor = config.color || COLORS.lineBlack;
+                const normalizedData = config.values.map((v, i) => normalizeValue(v, config.metric || ''));
+                const pointBg = labels.map(y => isEstimate(y) ? COLORS.lineOrange : baseColor);
+                const pointBrd = labels.map(y => isEstimate(y) ? '#F47920' : baseColor);
+                return {
+                    label: config.label,
+                    data: normalizedData,
+                    borderColor: baseColor,
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.5,
+                    fill: false,
+                    spanGaps: false,
+                    pointRadius: 5,
+                    pointBackgroundColor: pointBg,
+                    pointBorderColor: pointBrd,
+                    pointBorderWidth: 1.5,
+                    tension: 0.3,
+                    yAxisID: config.yAxis || 'y',
+                    segment: {
+                        borderColor: function(ctx2) {
+                            return isEstimate(labels[ctx2.p1DataIndex]) ? COLORS.lineOrange : baseColor;
+                        },
+                        borderDash: function(ctx2) {
+                            return isEstimate(labels[ctx2.p1DataIndex]) ? [6, 4] : [];
+                        }
+                    }
+                };
+            });
+
+            return {
+                labels: labels,
+                datasets: datasets
+            };
+        }
+
+        function createStackedNIIChart(ctx, labels, clientNII, marketNII, yoyValues) {
+            const datasets = [];
+
+            if (clientNII && clientNII.length > 0) {
+                const backgroundColor = clientNII.map((v, i) => 
+                    isEstimate(labels[i]) ? COLORS.estimate : COLORS.historical
+                );
+                datasets.push({
+                    label: 'Client NII',
+                    data: clientNII.map(v => normalizeValue(v, 'Total NII')),
+                    backgroundColor: backgroundColor,
+                    borderColor: clientNII.map((v, i) =>
+                        isEstimate(labels[i]) ? COLORS.estimateBorder : COLORS.historicalBorder
+                    ),
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    stack: 'nii',
+                    order: 1
+                });
+            }
+
+            if (marketNII && marketNII.length > 0) {
+                const backgroundColor = marketNII.map((v, i) =>
+                    isEstimate(labels[i]) ? 'rgba(100, 100, 100, 1)' : 'rgba(150, 150, 150, 1)'
+                );
+                datasets.push({
+                    label: 'Market NII',
+                    data: marketNII.map(v => normalizeValue(v, 'Total NII')),
+                    backgroundColor: backgroundColor,
+                    borderColor: marketNII.map((v, i) =>
+                        isEstimate(labels[i]) ? '#999' : '#ccc'
+                    ),
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    stack: 'nii',
+                    order: 1
+                });
+            }
+
+            if (yoyValues && yoyValues.some(v => v !== null)) {
+                datasets.push({
+                    label: 'YoY Growth %',
+                    data: yoyValues,
+                    type: 'line',
+                    borderColor: 'rgba(120, 120, 120, 1)',
+                    borderWidth: 2.5,
+                    fill: false,
+                    pointRadius: 5,
+                    pointBackgroundColor: 'rgba(120, 120, 120, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                    order: 2,
+                    z: 10,
+                    datalabels: {
+                        display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                        formatter: function(v) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : null; },
+                        color: '#1a1a1a', font: { size: 9, weight: '600' },
+                        backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                        anchor: 'end', align: 'top', offset: 2, clip: false
+                    }
+                });
+            }
+
+            return {
+                labels: labels,
+                datasets: datasets
+            };
+        }
+
+        function createMixedChart(ctx, labels, barData, barLabel, lineData, lineLabel, barMetric, lineMetric, lineColor) {
+            const lm = lineMetric || '';
+            const lc = lineColor || COLORS.lineBlack;
+            return {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: barLabel,
+                        data: barData.map(v => normalizeValue(v, barMetric || '')),
+                        backgroundColor: barData.map((v, i) => isEstimate(labels[i]) ? COLORS.estimate : COLORS.historical),
+                        borderColor: barData.map((v, i) => isEstimate(labels[i]) ? COLORS.estimateBorder : COLORS.historicalBorder),
+                        borderWidth: 1,
+                        yAxisID: 'y',
+                        order: 0
+                    },
+                    {
+                        type: 'line',
+                        label: lineLabel,
+                        data: lineData.map(v => normalizeValue(v, lm)),
+                        borderColor: 'rgba(120, 120, 120, 1)',
+                        borderWidth: 2.5,
+                        fill: false,
+                        pointRadius: 5,
+                        pointBackgroundColor: labels.map(y => isEstimate(y) ? COLORS.lineOrange : 'rgba(120,120,120,1)'),
+                        pointBorderColor: labels.map(y => isEstimate(y) ? '#F47920' : 'rgba(120,120,120,1)'),
+                        pointBorderWidth: 2,
+                        yAxisID: 'y1',
+                        tension: 0.3,
+                        order: 2,
+                        z: 10,
+                        segment: {
+                            borderColor: function(ctx2) { return isEstimate(labels[ctx2.p1DataIndex]) ? COLORS.lineOrange : COLORS.lineGray; },
+                            borderDash: function(ctx2) { return isEstimate(labels[ctx2.p1DataIndex]) ? [6, 4] : []; }
+                        },
+                    datalabels: {
+                        display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                        formatter: function(v) { return v != null ? v.toFixed(1) + '%' : null; },
+                        color: '#1a1a1a', font: { size: 9, weight: '600' },
+                        backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                        anchor: 'end', align: 'top', offset: 2, clip: false
+                    }
+                    }
+                ]
+            };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabId === 'consolidated') {
+                renderConsolidatedTab();
+            } else if (tabId === 'consolidated-charts') {
+                renderConsolidatedChartsTab();
+            } else {
+                const bankIdx = BANK_IDS.indexOf(tabId);
+                if (bankIdx >= 0) {
+                    renderBankTab(BANKS[bankIdx], bankIdx);
+                }
+            }
+        }
+
+        function renderBankTab(bankName, bankIdx) {
+            const tabId = BANK_IDS[bankIdx];
+            const key = 'bank-' + tabId;
+            
+            if (window.renderedCharts && window.renderedCharts.has(key)) {
+                return;
+            }
+
+            if (!window.renderedCharts) {
+                window.renderedCharts = new Set();
+            }
+
+            const container = document.getElementById('charts-' + tabId);
+            if (!container) return;
+
+            // BTG-specific metric list
+            const chartMetrics = [
+                'Loan Book',
+                'Loan Book Mix',
+                ...(bankName === 'BTG Pactual' ? ['BTG Revenue Breakdown', 'BTG Division Revenues', 'BTG Fee Income Mix'] : []),
+                ...(bankName === 'BTG Pactual' ? [] : ['Total NII']),
+                ...(bankName === 'BTG Pactual' ? [] : ['NIM']),
+                ...(bankName === 'BTG Pactual' ? [] : ['Service Income']),
+                ...(bankName === 'BTG Pactual' ? [] : ['Revenue Mix']),
+                ...(bankName === 'Bradesco' ? ['Insurance Income'] : []),
+                'Total Revenues',
+                ...(bankName === 'BTG Pactual' ? [] : ['NPL Ratio']),
+                ...(bankName === 'BTG Pactual' ? [] : ['Cost of Risk']),
+                ...(bankName === 'BTG Pactual' ? [] : ['Provision Expenses']),
+                ...(bankName === 'BTG Pactual' ? [] : ['Coverage Ratio']),
+                ...(bankName === 'BTG Pactual' ? [] : ['NII After Provisions']),
+                'OpEx & Efficiency',
+                'EBT',
+                'Net Income',
+                'ROE',
+                'Equity & Capital Ratios',
+                'Loan-to-Equity'
+            ];
+
+            // Place year filter bar OUTSIDE the charts-grid, at the tab-content level
+            const tabContentDiv = container.parentElement;
+            const existingFilter = document.getElementById('year-filter-' + tabId);
+            if (existingFilter) existingFilter.remove();
+
+            function reRenderBankTab() {
+                window.renderedCharts.delete(key);
+                const prefix = 'chart-' + bankName.replace(/\s+/g, '-') + '-';
+                Object.keys(window.chartInstances || {}).forEach(k => {
+                    if (k.startsWith(prefix)) { window.chartInstances[k].destroy(); delete window.chartInstances[k]; }
+                });
+                renderBankTab(bankName, bankIdx);
+            }
+            const yearBar = buildYearFilterBar(tabId, reRenderBankTab);
+            tabContentDiv.insertBefore(yearBar, container);
+
+            container.innerHTML = '';
+
+            const filteredYears = getFilteredYears(tabId);
+
+            chartMetrics.forEach(metric => {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                var titleMap = {
+                        'Loan Book': 'Loan Book (BRL mm)',
+                        'Loan Book Mix': 'Loan Book Mix (% of total)',
+                        'Total NII': 'Total NII (BRL mm)',
+                        'NIM': 'NIM (%)',
+                        'Service Income': 'Service Income (BRL mm)',
+                        'Revenue Mix': 'Revenue Mix (%)',
+                        'Insurance Income': 'Insurance Income (BRL mm)',
+                        'Total Revenues': 'Total Revenues (BRL mm)',
+                        'NPL Ratio': 'NPL Ratio (%)',
+                        'Cost of Risk': 'Cost of Risk (%)',
+                        'Provision Expenses': 'Provision Expenses (BRL mm)',
+                        'Coverage Ratio': 'Coverage Ratio (%)',
+                        'NII After Provisions': 'NII After Provisions (BRL mm)',
+                        'OpEx & Efficiency': 'OpEx & Efficiency (BRL mm / %)',
+                        'EBT': 'EBT (BRL mm)',
+                        'Net Income': 'Net Income (BRL mm)',
+                        'ROE': 'ROE (%)',
+                        'Equity & Capital Ratios': 'Equity & Capital Ratios (BRL mm / %)',
+                        'Loan-to-Equity': 'Loan-to-Equity (x)',
+                        'BTG Revenue Breakdown': 'BTG Revenue Breakdown (% of total)',
+                        'BTG Division Revenues': 'BTG Division Revenues (BRL mm)',
+                        'BTG Fee Income Mix': 'Recurrent Fee Income Mix (% of total revenues)'
+                    };
+                    chartDiv.innerHTML = '<h3>' + (titleMap[metric] || metric) + '</h3><div class="chart-wrapper"><canvas></div>';
+                container.appendChild(chartDiv);
+            });
+
+            setTimeout(() => {
+                const canvases = container.querySelectorAll('canvas');
+
+                chartMetrics.forEach((metric, idx) => {
+                    const canvas = canvases[idx];
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    let chartConfig;
+                    let years, values;
+
+                    // --- Composite metrics ---
+                    if (metric === 'Total NII') {
+                        const d = getChartData(bankName, 'Total NII');
+                        if (!d) return;
+                        years = filteredYears; values = getYearVals(d, years);
+                        const clientNII = getChartData(bankName, 'Client NII');
+                        const marketNII = getChartData(bankName, 'Market NII');
+                        const yoY = computeYoY(values, years);
+                        const chartData = createStackedNIIChart(ctx, years,
+                            clientNII ? getYearVals(clientNII, years) : null,
+                            marketNII ? getYearVals(marketNII, years) : null, yoY);
+                        chartConfig = createChartConfig(chartData, 'Stacked Bar + Line');
+                    } else if (metric === 'NIM') {
+                        const totalNIMData = getChartData(bankName, 'Total NIM') || getChartData(bankName, 'NIM');
+                        const clientNIMData = getChartData(bankName, 'Client NIM');
+                        const totalNIM = totalNIMData || clientNIMData;
+                        if (!totalNIM) return;
+                        years = filteredYears; values = getYearVals(totalNIM, years);
+                        const clientNIM = totalNIMData ? clientNIMData : null;
+                        const ds = [];
+                        ds.push({ label: totalNIMData ? 'Total NIM' : 'Client NIM', values: values, metric: 'NIM', color: COLORS.lineBlack });
+                        if (clientNIM) {
+                            // Fix 3: align by year key, not by array position
+                            ds.push({ label: 'Client NIM', values: years.map(y => clientNIM[y] != null ? clientNIM[y] : null), metric: 'NIM', color: COLORS.lineGray });
+                        }
+                        const chartData = createLineChart(ctx, years, ds);
+                        chartConfig = createChartConfig(chartData, 'Line');
+                        // NIM always starts at 0%
+                        chartConfig.options.scales.y.min = 0;
+                        chartConfig.options.scales.y.beginAtZero = true;
+                    } else if (metric === 'OpEx & Efficiency') {
+                        const opex = getChartData(bankName, 'Operating Expenses');
+                        const eff = getChartData(bankName, 'Efficiency Ratio');
+                        if (!opex || !eff) return;
+                        years = filteredYears;
+                        const chartData = createMixedChart(ctx, years,
+                            getYearVals(opex, years), 'Operating Expenses (BRL mm)',
+                            getYearVals(eff, years), 'Efficiency Ratio (%)', 'Operating Expenses', 'Efficiency Ratio');
+                        chartConfig = createChartConfig(chartData, 'Mixed');
+                    } else if (metric === 'ROE') {
+                        const roe = getChartData(bankName, 'ROE');
+                        if (!roe) return;
+                        years = filteredYears; values = getYearVals(roe, years);
+                        const ds = [{ label: 'ROE', values: values, metric: 'ROE', color: COLORS.lineBlack }];
+                        const chartData = createLineChart(ctx, years, ds);
+                        chartConfig = createChartConfig(chartData, 'Line');
+                        chartConfig.options.scales.y.beginAtZero = true;
+                        chartConfig.options.scales.y.min = 0;
+                    } else if (metric === 'Equity & Capital Ratios') {
+                        const equity = getChartData(bankName, 'Equity');
+                        if (!equity) return;
+                        const bis = getChartData(bankName, 'BIS Ratio');
+                        const tier1 = getChartData(bankName, 'Tier 1 Ratio') || getChartData(bankName, 'CET1 Ratio');
+                        // Use union of all available years, sorted
+                        years = filteredYears;
+                        const bisVals = bis ? years.map(y => bis[y] != null ? normalizeValue(bis[y], 'BIS Ratio') : null) : null;
+                        const tier1Vals = tier1 ? years.map(y => tier1[y] != null ? normalizeValue(tier1[y], 'Tier 1 Ratio') : null) : null;
+                        const barVals = years.map(y => equity[y] != null ? normalizeValue(equity[y], 'Equity') : null);
+                        const ds = [];
+                        ds.push({
+                            label: 'Equity (BRL mm)', data: barVals,
+                            backgroundColor: years.map(y => isEstimate(y) ? COLORS.estimate : COLORS.historical),
+                            borderColor: years.map(y => isEstimate(y) ? COLORS.estimateBorder : COLORS.historicalBorder),
+                            borderWidth: 1, yAxisID: 'y', type: 'bar'
+                        });
+                        if (bisVals && bisVals.some(v => v !== null)) {
+                            const estIdx = years.findIndex(y => isEstimate(y));
+                            ds.push({
+                                label: 'BIS Ratio (%)', data: bisVals, type: 'line',
+                                borderColor: '#1E6091', borderWidth: 2.5, fill: false,
+                                pointRadius: 4, pointBackgroundColor: '#1E6091',
+                                pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                                yAxisID: 'y1', tension: 0.3, order: 2, z: 10,
+                                segment: {
+                                    borderDash: function(ctx2) { return ctx2.p1DataIndex >= estIdx && estIdx > 0 ? [5,3] : []; },
+                                    borderColor: function(ctx2) { return ctx2.p1DataIndex >= estIdx && estIdx > 0 ? 'rgba(30,96,145,0.6)' : '#1E6091'; }
+                                },
+                                spanGaps: true,
+                                datalabels: {
+                                    display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                                    formatter: function(v) { return v != null ? v.toFixed(1) + '%' : null; },
+                                    color: '#1E6091', font: { size: 9, weight: '600' },
+                                    backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                                    anchor: 'end', align: 'top', offset: 2, clip: false
+                                }
+                            });
+                        }
+                        if (tier1Vals && tier1Vals.some(v => v !== null)) {
+                            const estIdx = years.findIndex(y => isEstimate(y));
+                            ds.push({
+                                label: 'Tier 1 / CET1 (%)', data: tier1Vals, type: 'line',
+                                borderColor: '#2E8B57', borderWidth: 2.5, fill: false,
+                                pointRadius: 4, pointBackgroundColor: '#2E8B57',
+                                pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                                yAxisID: 'y1', tension: 0.3, order: 3, z: 10,
+                                segment: {
+                                    borderDash: function(ctx2) { return ctx2.p1DataIndex >= estIdx && estIdx > 0 ? [5,3] : []; },
+                                    borderColor: function(ctx2) { return ctx2.p1DataIndex >= estIdx && estIdx > 0 ? 'rgba(46,139,87,0.6)' : '#2E8B57'; }
+                                },
+                                spanGaps: true,
+                                datalabels: {
+                                    display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                                    formatter: function(v) { return v != null ? v.toFixed(1) + '%' : null; },
+                                    color: '#2E8B57', font: { size: 9, weight: '600' },
+                                    backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                                    anchor: 'end', align: 'top', offset: 2, clip: false
+                                }
+                            });
+                        }
+                        chartConfig = createChartConfig({ labels: years, datasets: ds }, 'Mixed');
+                        // Increase y1 headroom for BIS/Tier1 lines
+                        const allRatioVals2 = [...(bisVals||[]), ...(tier1Vals||[])].filter(v => v != null);
+                        if (allRatioVals2.length > 0) {
+                            chartConfig.options.scales.y1.suggestedMax = Math.ceil(Math.max(...allRatioVals2) * 1.45);
+                        }
+                    } else if (metric === 'Loan-to-Equity') {
+                        const loans = getChartData(bankName, 'Loan Book');
+                        const equity = getChartData(bankName, 'Equity');
+                        if (!loans || !equity) return;
+                        years = filteredYears;
+                        const ratioVals = years.map(y => {
+                            if (loans[y] && equity[y] && equity[y] !== 0) return loans[y] / equity[y];
+                            return null;
+                        });
+                        const ds = [{ label: 'Loan-to-Equity', values: ratioVals, metric: 'Loan-to-Equity', color: COLORS.lineBlack }];
+                        const chartData = createLineChart(ctx, years, ds);
+                        chartConfig = createChartConfig(chartData, 'LineRaw');
+                    } else if (metric === 'Loan Book Mix') {
+                        const mixData = getChartData(bankName, 'Loan Mix');
+                        if (!mixData) return;
+                        // Filter segments that have at least 1 non-zero value
+                        const segments = Object.keys(mixData).filter(s => 
+                            mixData[s] && Object.values(mixData[s]).some(v => v && v !== 0)
+                        );
+                        if (segments.length === 0) return;
+                        years = filteredYears;
+                        // Compute total per year
+                        const totals = {};
+                        years.forEach(y => {
+                            totals[y] = segments.reduce((sum, s) => sum + (mixData[s][y] || 0), 0);
+                        });
+                        const stackColors = ['#1E1E1E', '#F47920', '#888888', '#4A90D9', '#2E8B57', '#D4A017', '#8B4513', '#C0392B'];
+                        const ds = segments.map((seg, si) => ({
+                            label: seg,
+                            data: years.map(y => {
+                                const total = totals[y] || 0;
+                                const val = mixData[seg][y] || 0;
+                                return total > 0 ? parseFloat(((val / total) * 100).toFixed(1)) : 0;
+                            }),
+                            backgroundColor: stackColors[si % stackColors.length],
+                            borderWidth: 0.5, borderColor: '#fff', stack: 'mix', yAxisID: 'y'
+                        }));
+                        chartConfig = createChartConfig({ labels: years, datasets: ds }, 'Stacked Bar');
+                        // Override for % display
+                        chartConfig.options.scales.y.max = 100;
+                        chartConfig.options.scales.y.beginAtZero = true;
+                        chartConfig.options.scales.y.ticks.callback = v => v.toFixed(0) + '%';
+                        chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
+                            return context.dataset.label + ': ' + (context.parsed.y || 0).toFixed(1) + '%';
+                        };
+                        chartConfig.options.plugins.datalabels = {
+                            display: function(ctx2) { const v = ctx2.dataset.data[ctx2.dataIndex]; return v != null && v > 5; },
+                            formatter: function(v) { return v != null && v > 5 ? v.toFixed(1) + '%' : null; },
+                            color: '#fff',
+                            font: { size: 9, weight: '600' },
+                            anchor: 'center',
+                            align: 'center',
+                            clip: true
+                        };
+                    } else if (metric === 'Revenue Mix') {
+                        // Fix 8: Revenue Mix as % breakdown, not BRL absolute
+                        const svc = getChartData(bankName, 'Service Income');
+                        const nii = getChartData(bankName, 'Total NII');
+                        const ins = getChartData(bankName, 'Insurance Income');
+                        if (!svc && !nii) return;
+                        const refData = nii || svc;
+                        years = filteredYears;
+                        // Compute % totals per year
+                        const revTotals = years.map(y => {
+                            return (nii && nii[y] ? Math.abs(nii[y]) : 0)
+                                 + (svc && svc[y] ? Math.abs(svc[y]) : 0)
+                                 + (ins && ins[y] ? Math.abs(ins[y]) : 0);
+                        });
+                        const toPct = (val, i) => revTotals[i] > 0 ? parseFloat(((Math.abs(val) / revTotals[i]) * 100).toFixed(1)) : 0;
+                        const ds = [];
+                        if (nii) ds.push({ label: 'NII', data: years.map((y,i) => toPct(nii[y] || 0, i)), backgroundColor: '#1E1E1E', borderWidth: 0.5, borderColor: '#fff', stack: 'rev', yAxisID: 'y' });
+                        if (svc) ds.push({ label: 'Service Income', data: years.map((y,i) => toPct(svc[y] || 0, i)), backgroundColor: '#F47920', borderWidth: 0.5, borderColor: '#fff', stack: 'rev', yAxisID: 'y' });
+                        if (ins) ds.push({ label: 'Insurance', data: years.map((y,i) => toPct(ins[y] || 0, i)), backgroundColor: '#888888', borderWidth: 0.5, borderColor: '#fff', stack: 'rev', yAxisID: 'y' });
+                        chartConfig = createChartConfig({ labels: years, datasets: ds }, 'Stacked Bar');
+                        chartConfig.options.scales.y.max = 100;
+                        chartConfig.options.scales.y.beginAtZero = true;
+                        chartConfig.options.scales.y.ticks.callback = v => v.toFixed(0) + '%';
+                        chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
+                            return context.dataset.label + ': ' + (context.parsed.y || 0).toFixed(1) + '%';
+                        };
+                        chartConfig.options.plugins.datalabels = {
+                            display: function(ctx2) { const v = ctx2.dataset.data[ctx2.dataIndex]; return v != null && v > 5; },
+                            formatter: function(v) { return v != null && v > 5 ? v.toFixed(1) + '%' : null; },
+                            color: '#fff',
+                            font: { size: 9, weight: '600' },
+                            anchor: 'center',
+                            align: 'center',
+                            clip: true
+                        };
+                    } else if (['NPL Ratio', 'Cost of Risk', 'Coverage Ratio'].includes(metric)) {
+                        const d = getChartData(bankName, metric);
+                        if (!d) return;
+                        years = filteredYears; values = getYearVals(d, years);
+                        const ds = [{ label: metric, values: values, metric: metric, color: COLORS.lineBlack }];
+                        const chartData = createLineChart(ctx, years, ds);
+                        chartConfig = createChartConfig(chartData, 'Line');
+                        if (metric === 'Coverage Ratio') {
+                            chartConfig.options.scales.y.min = 90;
+                            chartConfig.options.scales.y.beginAtZero = false;
+                        } else {
+                            // NPL Ratio and Cost of Risk start at 0%
+                            chartConfig.options.scales.y.min = 0;
+                            chartConfig.options.scales.y.beginAtZero = true;
+                            // Add headroom for NPL Ratio to avoid labels touching top
+                            if (metric === 'NPL Ratio') {
+                                const nplVals = values.map(v => normalizeValue(v, metric)).filter(v => v != null);
+                                if (nplVals.length > 0) {
+                                    const maxVal = Math.max(...nplVals);
+                                    chartConfig.options.scales.y.suggestedMax = maxVal * 1.35;
+                                }
+                            }
+                        }
+                    } else if (metric === 'BTG Revenue Breakdown') {
+                        // Fix 7a: BTG revenue breakdown - % stacked bars
+                        const divData = getChartData(bankName, 'BTG Divisions');
+                        if (!divData) return;
+                        const btgSegs = Object.keys(divData);
+                        years = filteredYears;
+                        const btgTotals = {};
+                        years.forEach(y => { btgTotals[y] = btgSegs.reduce((s, seg) => s + (divData[seg][y] || 0), 0); });
+                        const btgStackColors = ['#1E1E1E','#F47920','#4A90D9','#888888','#2E8B57','#D4A017','#8B4513'];
+                        const btgDs = btgSegs.map((seg, si) => ({
+                            label: seg,
+                            data: years.map(y => {
+                                const tot = btgTotals[y] || 0;
+                                const val = divData[seg][y] || 0;
+                                return tot > 0 ? parseFloat(((val / tot) * 100).toFixed(1)) : 0;
+                            }),
+                            backgroundColor: btgStackColors[si % btgStackColors.length],
+                            borderWidth: 0.5, borderColor: '#fff', stack: 'btgrev', yAxisID: 'y'
+                        }));
+                        chartConfig = createChartConfig({ labels: years, datasets: btgDs }, 'Stacked Bar');
+                        chartConfig.options.scales.y.max = 100;
+                        chartConfig.options.scales.y.beginAtZero = true;
+                        chartConfig.options.scales.y.ticks.callback = v => v.toFixed(0) + '%';
+                        chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
+                            return context.dataset.label + ': ' + (context.parsed.y || 0).toFixed(1) + '%';
+                        };
+                        chartConfig.options.plugins.datalabels = {
+                            display: function(ctx2) { const v = ctx2.dataset.data[ctx2.dataIndex]; return v != null && v > 5; },
+                            formatter: function(v) { return v != null && v > 5 ? v.toFixed(1) + '%' : null; },
+                            color: '#fff',
+                            font: { size: 9, weight: '600' },
+                            anchor: 'center',
+                            align: 'center',
+                            clip: true
+                        };
+                    } else if (metric === 'BTG Division Revenues') {
+                        // Fix 7b: BTG division revenues - individual bars with YoY line
+                        const divData = getChartData(bankName, 'BTG Divisions');
+                        if (!divData) return;
+                        // Exclude PI&Participations from bar chart per user request
+                        const barSegs = Object.keys(divData).filter(s => s !== 'Principal Investments & Participations');
+                        years = filteredYears;
+                        const segColors2 = ['#1E1E1E','#F47920','#4A90D9','#888888','#2E8B57','#D4A017'];
+                        const btgDs2 = barSegs.map((seg, si) => {
+                            const segVals = years.map(y => divData[seg][y] || null);
+                            const yoyVals = computeYoY(segVals, years);
+                            return [
+                                {
+                                    type: 'bar',
+                                    label: seg,
+                                    data: segVals,
+                                    backgroundColor: years.map(y => isEstimate(y) ? segColors2[si % segColors2.length].replace(')', ', 0.5)').replace('rgb(', 'rgba(') : segColors2[si % segColors2.length]),
+                                    borderWidth: 1, borderColor: '#fff', yAxisID: 'y', stack: 'divrev', order: 0
+                                }
+                            ];
+                        }).flat();
+                        // Total YoY line
+                        const btgTotals2 = {};
+                        years.forEach(y => { btgTotals2[y] = Object.values(divData).reduce((s, d) => s + (d[y] || 0), 0); });
+                        const btgTotalVals = years.map(y => btgTotals2[y] || null);
+                        const btgTotalYoY = computeYoY(btgTotalVals, years);
+                        btgDs2.push({
+                            type: 'line', label: 'Total YoY Growth %',
+                            data: btgTotalYoY,
+                            borderColor: 'rgba(120,120,120,1)', borderWidth: 2.5, fill: false,
+                            pointRadius: 5, pointBackgroundColor: 'rgba(120,120,120,1)',
+                            pointBorderColor: '#fff', pointBorderWidth: 2,
+                            yAxisID: 'y1', tension: 0.3, order: 2, z: 10,
+                            datalabels: {
+                                display: function(c) { return c.dataset.data[c.dataIndex] != null; },
+                                formatter: function(v) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : null; },
+                                color: '#1a1a1a', font: { size: 9, weight: '600' },
+                                backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2, padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                                anchor: 'end', align: 'top', offset: 2, clip: false
+                            }
+                        });
+                        chartConfig = createChartConfig({ labels: years, datasets: btgDs2 }, 'Stacked Bar + Line');
+                        chartConfig.options.scales.y.ticks.callback = v => v.toLocaleString('de-DE', {maximumFractionDigits:0});
+                    } else if (metric === 'BTG Fee Income Mix') {
+                        // Fix 2: BTG Fee Income Mix - WM+AM as Recurrent Fee Income vs Other revenues
+                        const divData = getChartData(bankName, 'BTG Divisions');
+                        if (!divData) return;
+                        years = filteredYears;
+                        // Compute recurrent fee income = WM + AM
+                        const feeVals = years.map(y => {
+                            const wm = (divData['Wealth Management'] && divData['Wealth Management'][y]) || 0;
+                            const am = (divData['Asset Management'] && divData['Asset Management'][y]) || 0;
+                            return wm + am;
+                        });
+                        // Total revenues from BTG Divisions sum
+                        const feeTotals = years.map(y => Object.values(divData).reduce((s, d) => s + (d[y] || 0), 0));
+                        // Fee income % of total
+                        const feePct = years.map((y, i) => feeTotals[i] > 0 ? parseFloat(((feeVals[i] / feeTotals[i]) * 100).toFixed(2)) : null);
+                        // Other = rest (1 - fee %)
+                        const otherPct = years.map((y, i) => feePct[i] != null ? parseFloat((100 - feePct[i]).toFixed(2)) : null);
+                        const feeDs = [
+                            {
+                                label: 'Recurrent Fee Income (WM + AM)',
+                                data: feePct,
+                                borderColor: '#1E6091',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2.5,
+                                fill: false,
+                                pointRadius: 5,
+                                pointBackgroundColor: years.map(y => isEstimate(y) ? COLORS.lineOrange : '#1E6091'),
+                                pointBorderColor: years.map(y => isEstimate(y) ? '#F47920' : '#1E6091'),
+                                pointBorderWidth: 1.5,
+                                tension: 0.3,
+                                yAxisID: 'y',
+                                segment: {
+                                    borderColor: function(ctx2) { return isEstimate(years[ctx2.p1DataIndex]) ? COLORS.lineOrange : '#1E6091'; },
+                                    borderDash: function(ctx2) { return isEstimate(years[ctx2.p1DataIndex]) ? [6,4] : []; }
+                                }
+                            },
+                            {
+                                label: 'Other Revenues',
+                                data: otherPct,
+                                borderColor: COLORS.lineGray,
+                                backgroundColor: 'transparent',
+                                borderWidth: 2.5,
+                                fill: false,
+                                pointRadius: 5,
+                                pointBackgroundColor: years.map(y => isEstimate(y) ? COLORS.lineOrange : COLORS.lineGray),
+                                pointBorderColor: years.map(y => isEstimate(y) ? '#F47920' : COLORS.lineGray),
+                                pointBorderWidth: 1.5,
+                                tension: 0.3,
+                                yAxisID: 'y',
+                                segment: {
+                                    borderColor: function(ctx2) { return isEstimate(years[ctx2.p1DataIndex]) ? COLORS.lineOrange : COLORS.lineGray; },
+                                    borderDash: function(ctx2) { return isEstimate(years[ctx2.p1DataIndex]) ? [6,4] : []; }
+                                }
+                            }
+                        ];
+                        chartConfig = createChartConfig({ labels: years, datasets: feeDs }, 'Line');
+                        chartConfig.options.scales.y.ticks.callback = v => v.toFixed(1) + '%';
+                        chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
+                            return context.dataset.label + ': ' + (context.parsed.y || 0).toFixed(1) + '%';
+                        };
+                    } else {
+                        const d = getChartData(bankName, metric);
+                        if (!d) return;
+                        years = filteredYears; values = getYearVals(d, years);
+                        const yoY = computeYoY(values, years);
+                        const chartData = createBarChart(ctx, years, values, yoY, metric);
+                        chartConfig = createChartConfig(chartData, 'Bar + Line');
+                    }
+
+                    // Auto-headroom: ensure y-axis has enough room above max data value
+                    if (chartConfig && chartConfig.data && chartConfig.data.datasets) {
+                        // y axis headroom
+                        const allVals = chartConfig.data.datasets
+                            .filter(ds => (ds.yAxisID || 'y') === 'y')
+                            .flatMap(ds => (ds.data || []).filter(v => v != null && typeof v === 'number'));
+                        if (allVals.length > 0) {
+                            const maxV = Math.max(...allVals);
+                            const minV = Math.min(...allVals);
+                            const range = maxV - (chartConfig.options.scales.y.min != null ? chartConfig.options.scales.y.min : minV);
+                            if (range > 0) {
+                                const headroom = range * 0.20;
+                                if (!chartConfig.options.scales.y.suggestedMax || chartConfig.options.scales.y.suggestedMax < maxV + headroom) {
+                                    chartConfig.options.scales.y.suggestedMax = maxV + headroom;
+                                }
+                            }
+                        }
+                        // y1 axis headroom (YoY / ratio lines)
+                        const allY1 = chartConfig.data.datasets
+                            .filter(ds => ds.yAxisID === 'y1')
+                            .flatMap(ds => (ds.data || []).filter(v => v != null && typeof v === 'number'));
+                        if (allY1.length > 0 && chartConfig.options.scales.y1) {
+                            const maxY1 = Math.max(...allY1);
+                            const minY1 = Math.min(...allY1);
+                            const rangeY1 = maxY1 - minY1;
+                            if (rangeY1 > 0) {
+                                chartConfig.options.scales.y1.suggestedMax = maxY1 + rangeY1 * 0.25;
+                                chartConfig.options.scales.y1.suggestedMin = minY1 - rangeY1 * 0.15;
+                            }
+                        }
+                    }
+
+                    const chartId = 'chart-' + bankName.replace(/\s+/g, '-') + '-' + metric.replace(/\s+/g, '-');
+                    if (window.chartInstances && window.chartInstances[chartId]) {
+                        window.chartInstances[chartId].destroy();
+                    }
+                    if (!window.chartInstances) window.chartInstances = {};
+                    window.chartInstances[chartId] = new Chart(ctx, chartConfig);
+                });
+            }, 0);
+
+            window.renderedCharts.add(key);
+        }
+
+        function createChartConfig(data, type) {
+            const config = {
+                type: (type === 'Line' || type === 'LineRaw') ? 'line' : 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#444', font: { size: 12 }, usePointStyle: true, padding: 15 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#F47920', borderWidth: 1,
+                            titleColor: '#fff', bodyColor: '#e0e0e0', padding: 10, displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    const val = context.parsed.y;
+                                    if (val === null || val === undefined) return label + 'N/A';
+                                    if (label.includes('(x)') || label.includes('Loan-to-Equity')) {
+                                        return label + val.toFixed(1) + 'x';
+                                    } else if (label.includes('%') || label.includes('YoY') || label.includes('Efficiency') || label.includes('ROE') || label.includes('NIM') || label.includes('NPL') || label.includes('Cost of Risk') || label.includes('Coverage') || label.includes('BIS') || label.includes('Tier')) {
+                                        return label + val.toFixed(1) + '%';
+                                    } else {
+                                        return label + 'BRL ' + val.toLocaleString('de-DE', {maximumFractionDigits: 0}) + ' mm';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#e8e8e8', drawBorder: false },
+                            ticks: { color: '#666', font: { size: 11 } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: type === 'Bar + Line' || type === 'Mixed' || type === 'Stacked Bar + Line',
+                            position: 'right',
+                            grid: { drawOnChartArea: false, drawBorder: false },
+                            ticks: { color: '#666', font: { size: 11 }, callback: function(v) { return v.toFixed(1) + '%'; } }
+                        },
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: '#666', font: { size: 11 } }
+                        }
+                    }
+                }
+            };
+
+            if (type === 'Line') {
+                config.options.scales.y.beginAtZero = false;
+                config.options.scales.y.ticks.callback = function(v) { return v.toFixed(1) + '%'; };
+                config.options.plugins.datalabels = {
+                    display: function(ctx2) { return ctx2.dataset.data[ctx2.dataIndex] != null; },
+                    formatter: function(v) { return v != null ? v.toFixed(1) + '%' : null; },
+                    color: '#333',
+                    font: { size: 9, weight: '600' },
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 2,
+                    clip: false,
+                    padding: 1
+                };
+            } else if (type === 'LineRaw') {
+                config.options.scales.y.beginAtZero = false;
+                config.options.scales.y.ticks.callback = function(v) { return v.toFixed(1) + 'x'; };
+                config.options.plugins.datalabels = {
+                    display: function(ctx2) { return ctx2.dataset.data[ctx2.dataIndex] != null; },
+                    formatter: function(v) { return v != null ? v.toFixed(2) + 'x' : null; },
+                    color: '#333',
+                    font: { size: 9, weight: '600' },
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 2,
+                    clip: false
+                };
+            } else if (type === 'Stacked Bar + Line') {
+                config.options.scales.y.stacked = true;
+                config.options.scales.x.stacked = true;
+            } else if (type === 'Stacked Bar') {
+                config.options.scales.y.stacked = true;
+                config.options.scales.x.stacked = true;
+                config.options.scales.y1.display = false;
+            }
+
+            return config;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // VALUATION MULTIPLES — live prices from Yahoo Finance
+        // ═══════════════════════════════════════════════════════════════════
+        // shares  = fully diluted shares outstanding in millions (from each bank's Excel model)
+        // eqLast  = last reported equity in BRL mm (period in eqPeriod)
+        // div26   = dividends/JCP/IOC 2026E in BRL mm (from model)
+        const MULTIPLES_CONFIG = [
+            { bank: 'Bradesco',        ticker: 'BBDC4.SA',  display: 'BBDC4',  usd: false, shares: 10577.012, eqLast: 169590,  eqPeriod: '3Q25', div26: 17517.19 },
+            { bank: 'Santander',       ticker: 'SANB11.SA', display: 'SANB11', usd: false, shares: 3749.266,  eqLast: 94171,   eqPeriod: '3Q25', div26: 8465.79  },
+            { bank: 'Banco do Brasil', ticker: 'BBAS3.SA',  display: 'BBAS3',  usd: false, shares: 5730.834,  eqLast: 183549,  eqPeriod: '2Q25', div26: 4854.35  },
+            { bank: 'BTG Pactual',     ticker: 'BPAC11.SA', display: 'BPAC11', usd: false, shares: 3807.904,  eqLast: 65605,   eqPeriod: '3Q25', div26: 5285.97  },
+            { bank: 'Nubank',          ticker: 'NU',         display: 'NU',     usd: true,  shares: 4886.361,  eqLast: 56163,   eqPeriod: '3Q25', div26: 0        },
+            { bank: 'Inter',           ticker: 'INTR',       display: 'INTR',   usd: true,  shares: 438.990,   eqLast: 9680,    eqPeriod: '3Q25', div26: 174.49   },
+            { bank: 'Banrisul',        ticker: 'BRSR6.SA',   display: 'BRSR6',  usd: false, shares: 408.974,   eqLast: 10413,   eqPeriod: '1Q25', div26: 566.43   },
+            { bank: 'ABC Brasil',      ticker: 'ABCB4.SA',   display: 'ABCB4',  usd: false, shares: 226.090,   eqLast: 6723,    eqPeriod: '3Q25', div26: 589.42   }
+        ];
+
+        // Baked fallback quotes (snapshot 18-Feb-2026) — used when live fetch fails
+        // Market cap is now computed from model shares × price, so only price + divYield needed
+        const FALLBACK_QUOTES = {
+            _date: '2026-02-18',
+            'BBDC4.SA':  { price: 20.97, divYield: 0.0549, currency: 'BRL' },
+            'SANB11.SA': { price: 35.21, divYield: 0.0505, currency: 'BRL' },
+            'BBAS3.SA':  { price: 25.43, divYield: 0.0416, currency: 'BRL' },
+            'BPAC11.SA': { price: 60.12, divYield: 0.0180, currency: 'BRL' },
+            'NU':        { price: 17.25, divYield: 0.0030, currency: 'USD' },
+            'INTR':      { price:  8.82, divYield: 0.0010, currency: 'USD' },
+            'BRSR6.SA':  { price: 14.50, divYield: 0.0500, currency: 'BRL' },
+            'ABCB4.SA':  { price: 23.52, divYield: 0.0913, currency: 'BRL' },
+            'USDBRL=X':  { price: 5.2231 }
+        };
+
+        async function fetchYahooQuotes() {
+            const tickers = MULTIPLES_CONFIG.map(c => c.ticker).concat(['USDBRL=X']);
+            const symbols  = tickers.join(',');
+            const fields   = 'regularMarketPrice,marketCap,trailingAnnualDividendYield,currency,symbol';
+            const yUrl1 = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=${fields}`;
+            const yUrl2 = yUrl1.replace('query1', 'query2');
+
+            function parseResult(json) {
+                const out = {};
+                (json.quoteResponse?.result || []).forEach(q => {
+                    out[q.symbol] = {
+                        price:     q.regularMarketPrice,
+                        marketCap: q.marketCap,
+                        divYield:  q.trailingAnnualDividendYield,
+                        currency:  q.currency
+                    };
+                });
+                return Object.keys(out).length > 0 ? out : null;
+            }
+
+            // Strategy 1: CORS proxies (for file:// access)
+            const proxyUrls = [
+                `https://corsproxy.io/?${encodeURIComponent(yUrl1)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
+                `https://corsproxy.io/?${encodeURIComponent(yUrl2)}`
+            ];
+            for (const url of proxyUrls) {
+                try {
+                    const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(8000) });
+                    if (!r.ok) continue;
+                    const json = await r.json();
+                    const result = parseResult(json);
+                    if (result) { result._live = true; return result; }
+                } catch(e) { /* try next */ }
+            }
+
+            // Strategy 2: Direct Yahoo (works from web server, not file://)
+            for (const url of [yUrl1, yUrl2]) {
+                try {
+                    const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(6000) });
+                    if (!r.ok) continue;
+                    const json = await r.json();
+                    const result = parseResult(json);
+                    if (result) { result._live = true; return result; }
+                } catch(e) { /* try next */ }
+            }
+
+            // Strategy 3: Individual ticker fetch via Yahoo v8 chart API through CORS proxy
+            try {
+                const out = {};
+                for (const t of tickers) {
+                    try {
+                        const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?interval=1d&range=1d`;
+                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(chartUrl)}`;
+                        const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
+                        if (!r.ok) continue;
+                        const json = await r.json();
+                        const meta = json?.chart?.result?.[0]?.meta;
+                        if (meta) {
+                            out[t] = {
+                                price: meta.regularMarketPrice,
+                                marketCap: meta.marketCap || null,
+                                divYield: null,
+                                currency: meta.currency
+                            };
+                        }
+                    } catch(e) { /* skip ticker */ }
+                }
+                if (Object.keys(out).length >= 3) { out._live = true; return out; }
+            } catch(e) { /* fallback below */ }
+
+            // Strategy 4: Baked fallback data (always available)
+            console.warn('[Multiples] All live fetch strategies failed — using baked fallback data from ' + FALLBACK_QUOTES._date);
+            const fallback = Object.assign({}, FALLBACK_QUOTES);
+            fallback._live = false;
+            return fallback;
+        }
+
+        function buildMultiplesTable(container) {
+            const section = document.createElement('div');
+            section.className = 'consol-section';
+            section.id = 'multiples-section';
+
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Valuation Multiples';
+            section.appendChild(h2);
+
+            // Table
+            const table = document.createElement('table');
+            table.className = 'consol-table multiples-table';
+            table.style.tableLayout = 'fixed';
+
+            // colgroup
+            const cg = document.createElement('colgroup');
+            const cwidths = ['195px','70px','88px','105px','72px','72px','72px','80px'];
+            cwidths.forEach(w => { const c = document.createElement('col'); c.style.width = w; cg.appendChild(c); });
+            table.appendChild(cg);
+
+            // thead
+            const thead = document.createElement('thead');
+            const hrow  = document.createElement('tr');
+            const hcols = ['Bank','Ticker','Price','Mkt Cap (BRL bi)','P/BV','P/E 26E','P/E 27E','DY 26E'];
+            hcols.forEach((txt, i) => {
+                const th = document.createElement('th');
+                th.textContent = txt;
+                if (i > 0) th.style.textAlign = 'right';
+                hrow.appendChild(th);
+            });
+            thead.appendChild(hrow);
+            table.appendChild(thead);
+
+            // tbody
+            const tbody = document.createElement('tbody');
+            MULTIPLES_CONFIG.forEach(cfg => {
+                const id  = cfg.bank.replace(/\s+/g, '-');
+                const tr  = document.createElement('tr');
+                tr.id = `mult-row-${id}`;
+
+                // Bank name
+                const tdBank = document.createElement('td');
+                tdBank.textContent = cfg.bank;
+                tdBank.style.fontWeight = '500';
+                tr.appendChild(tdBank);
+
+                // Ticker
+                const tdTicker = document.createElement('td');
+                tdTicker.textContent = cfg.display;
+                tdTicker.className = 'ticker-cell';
+                tr.appendChild(tdTicker);
+
+                // Placeholder cells
+                ['price','mcap','pbv','pe26','pe27','dy'].forEach(f => {
+                    const td = document.createElement('td');
+                    td.id = `mult-${id}-${f}`;
+                    td.textContent = '…';
+                    td.className = 'loading-cell';
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            section.appendChild(table);
+
+            // Footer: timestamp + refresh button
+            const footer = document.createElement('div');
+            footer.style.cssText = 'display:flex;align-items:center;gap:12px;margin-top:5px;';
+
+            const ts = document.createElement('span');
+            ts.id = 'mult-timestamp';
+            ts.style.cssText = 'font-size:10px;color:#999;font-style:italic;';
+            ts.textContent = 'Fetching live prices…';
+
+            const btn = document.createElement('button');
+            btn.className = 'multiples-refresh';
+            btn.textContent = '⟳  Refresh Prices';
+            btn.onclick = () => populateMultiples();
+
+            footer.appendChild(ts);
+            footer.appendChild(btn);
+            section.appendChild(footer);
+
+            container.appendChild(section);
+        }
+
+        async function populateMultiples() {
+            const ts = document.getElementById('mult-timestamp');
+            if (ts) ts.textContent = 'Fetching live prices…';
+
+            // Reset to loading state
+            MULTIPLES_CONFIG.forEach(cfg => {
+                const id = cfg.bank.replace(/\s+/g, '-');
+                ['price','mcap','pbv','pe26','pe27','dy'].forEach(f => {
+                    const el = document.getElementById(`mult-${id}-${f}`);
+                    if (el) { el.textContent = '…'; el.className = 'loading-cell'; }
+                });
+            });
+
+            const quotes = await fetchYahooQuotes();
+            const isLive = quotes?._live === true;
+
+            if (!quotes) {
+                if (ts) ts.textContent = '⚠ Prices unavailable — check connection and click Refresh.';
+                MULTIPLES_CONFIG.forEach(cfg => {
+                    const id = cfg.bank.replace(/\s+/g, '-');
+                    ['price','mcap','pbv','pe26','pe27','dy'].forEach(f => {
+                        const el = document.getElementById(`mult-${id}-${f}`);
+                        if (el) { el.textContent = '—'; el.className = 'num-cell'; el.style.color = '#bbb'; }
+                    });
+                });
+                return;
+            }
+
+            // USD/BRL exchange rate (BRL=X gives how many BRL per 1 USD)
+            const usdBrl = quotes['USDBRL=X']?.price || 5.22;
+
+            MULTIPLES_CONFIG.forEach(cfg => {
+                const id   = cfg.bank.replace(/\s+/g, '-');
+                const q    = quotes[cfg.ticker];
+                const bd   = window.BAKED_DATA?.[cfg.bank];
+
+                function set(field, text, cls, color) {
+                    const el = document.getElementById(`mult-${id}-${field}`);
+                    if (!el) return;
+                    el.textContent  = text;
+                    el.className    = cls || 'num-cell';
+                    el.style.color  = color || '#1a1a1a';
+                    el.style.fontStyle = 'normal';
+                }
+
+                if (!q || q.price == null) {
+                    ['price','mcap','pbv','pe26','pe27','dy'].forEach(f => set(f,'—','num-cell','#bbb'));
+                    return;
+                }
+
+                // Price
+                const ccy = cfg.usd ? 'US$' : 'R$';
+                set('price', `${ccy} ${q.price.toFixed(2)}`, cfg.usd ? 'price-usd' : 'price-brl');
+
+                // Market cap = shares (mn from model) × spot price → BRL bi
+                let mcapBi = null;
+                if (q.price != null && cfg.shares) {
+                    // shares (mn) × price (local ccy) = local ccy mn → ÷1000 = local ccy bi
+                    const mcapLocalBi = cfg.shares * q.price / 1000;
+                    mcapBi = cfg.usd ? mcapLocalBi * usdBrl : mcapLocalBi;
+                }
+                set('mcap', mcapBi != null ? `R$ ${mcapBi.toFixed(1)}` : '—');
+
+                // Model financials (all in BRL mm → divide by 1000 for bi)
+                const eqLastBi = cfg.eqLast ? cfg.eqLast / 1000 : null;
+                const ni26   = bd?.['Net Income']?.['2026E'];
+                const ni27   = bd?.['Net Income']?.['2027E'];
+                const ni26Bi = ni26 != null ? ni26 / 1000 : null;
+                const ni27Bi = ni27 != null ? ni27 / 1000 : null;
+
+                // P/BV = Mkt Cap / Last Reported Equity
+                if (mcapBi != null && eqLastBi != null && eqLastBi > 0) {
+                    const pbv = mcapBi / eqLastBi;
+                    const col = pbv < 1.2 ? '#1a8a3f' : pbv > 3 ? '#c0392b' : '#1a1a1a';
+                    set('pbv', pbv.toFixed(2) + 'x', 'num-cell', col);
+                } else { set('pbv', '—', 'num-cell', '#bbb'); }
+
+                // P/E 26E
+                if (mcapBi != null && ni26Bi != null && ni26Bi > 0) {
+                    set('pe26', (mcapBi / ni26Bi).toFixed(1) + 'x');
+                } else { set('pe26', '—', 'num-cell', '#bbb'); }
+
+                // P/E 27E
+                if (mcapBi != null && ni27Bi != null && ni27Bi > 0) {
+                    set('pe27', (mcapBi / ni27Bi).toFixed(1) + 'x');
+                } else { set('pe27', '—', 'num-cell', '#bbb'); }
+
+                // Dividend Yield = Dividends 2026E (model) / Market Cap
+                const div26Bi = cfg.div26 ? cfg.div26 / 1000 : null;
+                if (mcapBi != null && div26Bi != null && div26Bi > 0) {
+                    set('dy', ((div26Bi / mcapBi) * 100).toFixed(1) + '%');
+                } else { set('dy', '—', 'num-cell', '#bbb'); }
+            });
+
+            if (ts) {
+                const now = new Date();
+                const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                if (isLive) {
+                    ts.textContent = `Live · Atualizado às ${hhmm}  ·  USD/BRL: ${usdBrl.toFixed(3)}`;
+                } else {
+                    ts.textContent = `Snapshot ${FALLBACK_QUOTES._date}  ·  USD/BRL: ${usdBrl.toFixed(3)}  ·  Clique Refresh para dados ao vivo`;
+                }
+            }
+        }
+
+        function renderConsolidatedTab() {
+            if (window.renderedCharts && window.renderedCharts.has('consolidated')) return;
+            if (!window.renderedCharts) window.renderedCharts = new Set();
+
+            const container = document.getElementById('consolidated-content');
+            container.innerHTML = '';
+
+            // ── Valuation Multiples (top of tab) ──────────────────────
+            buildMultiplesTable(container);
+            populateMultiples();   // async: fills in prices when ready
+
+            const YEARS = ['2024', '2025E', '2026E', '2027E'];
+
+            const isPct = (m) => ['NPL Ratio','Cost of Risk','ROE','NIM','Coverage Ratio','Efficiency Ratio','BIS Ratio','Tier 1 Ratio'].includes(m);
+
+            function resolveKey(bank, metric) {
+                if (metric === 'NIM') return getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+                return getChartData(bank, metric) ? metric : null;
+            }
+
+            function fmtVal(v, metric) {
+                if (v === null || v === undefined) return '';
+                const n = normalizeValue(v, metric);
+                if (n === null) return '';
+                if (isPct(metric)) return n.toFixed(2) + '%';
+                if (metric === 'Coverage Ratio') return n.toFixed(0) + '%';
+                return (n / 1000).toFixed(1);
+            }
+
+            function fmtChg(curr, prev, metric) {
+                if (curr == null || prev == null) return { text: '', cls: '' };
+                const nc = normalizeValue(curr, metric);
+                const np = normalizeValue(prev, metric);
+                if (nc === null || np === null) return { text: '', cls: '' };
+                if (isPct(metric) || metric === 'Coverage Ratio') {
+                    const bps = Math.round((nc - np) * 100);
+                    return { text: (bps >= 0 ? '+' : '') + bps + ' bps', cls: bps >= 0 ? 'bps-pos' : 'bps-neg' };
+                } else {
+                    if (np === 0) return { text: '', cls: '' };
+                    const yoy = ((nc / np) - 1) * 100;
+                    return { text: (yoy >= 0 ? '+' : '') + yoy.toFixed(1) + '%', cls: yoy >= 0 ? 'yoy-pos' : 'yoy-neg' };
+                }
+            }
+
+            // BRL monetary metrics (income-statement order) — show YoY sub-rows
+            const monetaryMetrics = [
+                { key: 'Loan Book',             label: 'Loan Book' },
+                { key: 'Total NII',             label: 'Total NII' },
+                { key: 'Service Income',        label: 'Service Income' },
+                { key: 'Total Revenues',        label: 'Total Revenues' },
+                { key: 'Provision Expenses',    label: 'Provision Expenses' },
+                { key: 'NII After Provisions',  label: 'NII After Provisions' },
+                { key: 'Operating Expenses',    label: 'Operating Expenses' },
+                { key: 'EBT',                   label: 'EBT' },
+                { key: 'Net Income',            label: 'Net Income' }
+            ];
+
+            // Ratio / index metrics — no YoY sub-rows
+            const ratioMetrics = [
+                { key: 'NIM',               label: 'NIM' },
+                { key: 'NPL Ratio',         label: 'NPL Ratio' },
+                { key: 'Cost of Risk',      label: 'Cost of Risk' },
+                { key: 'Coverage Ratio',    label: 'Coverage Ratio' },
+                { key: 'Efficiency Ratio',  label: 'Efficiency Ratio' },
+                { key: 'ROE',               label: 'ROE' },
+                { key: 'BIS Ratio',         label: 'BIS Ratio' }
+            ];
+
+            function buildHeader() {
+                // colgroup enforces identical column widths across both sub-tables
+                let h = '<colgroup><col style="width:195px">' + YEARS.map(() => '<col>').join('') + '</colgroup>';
+                h += '<thead><tr><th style="text-align:left">Metric</th>';
+                YEARS.forEach(y => {
+                    const cls = y.includes('E') ? ' class="est-year"' : '';
+                    h += '<th' + cls + '>' + y + '</th>';
+                });
+                return h + '</tr></thead>';
+            }
+
+            function renderMetricRows(tbody, bank, metrics, showYoY) {
+                metrics.forEach(bm => {
+                    const dk = resolveKey(bank, bm.key);
+                    if (!dk) return;
+                    const data = getChartData(bank, dk);
+                    if (!data) return;
+                    const label = dk === 'Client NIM' ? 'Client NIM' : bm.label;
+                    const unit = (isPct(bm.key) || bm.key === 'Coverage Ratio') ? '' : ' (BRL bi)';
+
+                    let row = '<tr><td>' + label + '<span style="font-size:10px;color:#aaa">' + unit + '</span></td>';
+                    YEARS.forEach(y => {
+                        const v = data[y] != null ? data[y] : null;
+                        const cls = y.includes('E') ? ' style="color:#F47920"' : '';
+                        row += '<td' + cls + '>' + fmtVal(v, bm.key) + '</td>';
+                    });
+                    row += '</tr>';
+                    tbody.innerHTML += row;
+
+                    if (showYoY) {
+                        let sub = '<tr class="yoy-subrow"><td style="padding-left:22px;font-style:italic;font-size:11px;color:#888">YoY</td><td></td>';
+                        for (let i = 1; i < YEARS.length; i++) {
+                            const chg = fmtChg(data[YEARS[i]] ?? null, data[YEARS[i-1]] ?? null, bm.key);
+                            sub += '<td style="font-style:italic;font-size:11px" class="' + chg.cls + '">' + chg.text + '</td>';
+                        }
+                        sub += '</tr>';
+                        tbody.innerHTML += sub;
+                    }
+                });
+            }
+
+            // One section per bank, each with two sub-tables
+            BANKS.forEach(bank => {
+                const hasMon = monetaryMetrics.some(bm => resolveKey(bank, bm.key));
+                const hasRat = ratioMetrics.some(bm => resolveKey(bank, bm.key));
+                if (!hasMon && !hasRat) return;
+
+                const sDiv = document.createElement('div');
+                sDiv.className = 'consol-section';
+                const h2 = document.createElement('h2');
+                h2.textContent = bank;
+                sDiv.appendChild(h2);
+
+                // ── Monetary sub-table ──────────────────────────────
+                if (hasMon) {
+                    const lbl = document.createElement('p');
+                    lbl.style.cssText = 'font-size:10px;font-weight:700;color:#F47920;text-transform:uppercase;letter-spacing:0.6px;margin:5px 0 2px 0;';
+                    lbl.textContent = 'Financial Results (BRL bi)';
+                    sDiv.appendChild(lbl);
+
+                    const tbl = document.createElement('table');
+                    tbl.className = 'consol-table';
+                    tbl.innerHTML = buildHeader();
+                    const tbody = document.createElement('tbody');
+                    renderMetricRows(tbody, bank, monetaryMetrics, true);
+                    tbl.appendChild(tbody);
+                    sDiv.appendChild(tbl);
+                }
+
+                // ── Ratio/Index sub-table ───────────────────────────
+                if (hasRat) {
+                    const lbl = document.createElement('p');
+                    lbl.style.cssText = 'font-size:10px;font-weight:700;color:#F47920;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 2px 0;';
+                    lbl.textContent = 'Ratios, Returns & Solvency';
+                    sDiv.appendChild(lbl);
+
+                    const tbl = document.createElement('table');
+                    tbl.className = 'consol-table';
+                    tbl.innerHTML = buildHeader();
+                    const tbody = document.createElement('tbody');
+                    renderMetricRows(tbody, bank, ratioMetrics, false);
+                    tbl.appendChild(tbody);
+                    sDiv.appendChild(tbl);
+                }
+
+                container.appendChild(sDiv);
+            });
+
+            const note = document.createElement('p');
+            note.style.cssText = 'font-size:11px;color:#999;margin-top:20px;';
+            note.textContent = 'Monetary values in BRL billions. YoY sub-rows show % change for monetary items and bps for ratios.';
+            container.appendChild(note);
+
+            window.renderedCharts.add('consolidated');
+        }
+
+
+        function renderConsolidatedChartsTab() {
+            if (window.renderedCharts && window.renderedCharts.has('consolidated-charts')) return;
+            if (!window.renderedCharts) window.renderedCharts = new Set();
+
+            const container = document.getElementById('consolidated-charts-content');
+            container.innerHTML = '';
+
+            const BANK_COLORS = {
+                'ABC Brasil': '#1E1E1E',
+                'Banco do Brasil': '#FFD700',
+                'Bradesco': '#C0392B',
+                'Santander': '#E74C3C',
+                'BTG Pactual': '#2C3E50',
+                'Nubank': '#7D3C98',
+                'Inter': '#F47920',
+                'Banrisul': '#1E6091'
+            };
+
+            // Toggle state: all active by default
+            if (!window.consolChartBanks) {
+                window.consolChartBanks = {};
+                BANKS.forEach(b => window.consolChartBanks[b] = true);
+            }
+
+            // Build toggle bar
+            const toggleBar = document.createElement('div');
+            toggleBar.className = 'bank-toggles';
+            toggleBar.id = 'consol-bank-toggles';
+
+            BANKS.forEach(bank => {
+                const btn = document.createElement('span');
+                btn.className = 'bank-toggle' + (window.consolChartBanks[bank] ? ' active' : '');
+                btn.textContent = bank;
+                const col = BANK_COLORS[bank];
+                btn.style.borderColor = col;
+                if (window.consolChartBanks[bank]) {
+                    btn.style.backgroundColor = col;
+                } else {
+                    btn.style.backgroundColor = 'transparent';
+                    btn.style.color = col;
+                }
+                btn.onclick = function() {
+                    window.consolChartBanks[bank] = !window.consolChartBanks[bank];
+                    // Force re-render
+                    window.renderedCharts.delete('consolidated-charts');
+                    // Destroy existing chart instances
+                    Object.keys(window.chartInstances || {}).forEach(k => {
+                        if (k.startsWith('consol-')) { window.chartInstances[k].destroy(); delete window.chartInstances[k]; }
+                    });
+                    renderConsolidatedChartsTab();
+                };
+                toggleBar.appendChild(btn);
+            });
+            container.appendChild(toggleBar);
+
+            // Build year filter bar
+            function reRenderConsolCharts() {
+                window.renderedCharts.delete('consolidated-charts');
+                Object.keys(window.chartInstances || {}).forEach(k => {
+                    if (k.startsWith('consol-')) { window.chartInstances[k].destroy(); delete window.chartInstances[k]; }
+                });
+                renderConsolidatedChartsTab();
+            }
+            const yearBar = buildYearFilterBar('consolidated-charts', reRenderConsolCharts);
+            container.appendChild(yearBar);
+
+            const filteredYears = getFilteredYears('consolidated-charts');
+
+            // Metrics to show
+            const consolMetrics = [
+                { key: 'Loan Book', label: 'Loan Book (BRL mm)', type: 'bar', exclude: [] },
+                { key: 'Loan Book YoY', label: 'Loan Book YoY Growth (%)', type: 'bar', computed: 'yoy', source: 'Loan Book', exclude: [] },
+                { key: 'Total NII', label: 'Total NII (BRL mm)', type: 'bar', exclude: ['BTG Pactual'] },
+                { key: 'NIM', label: 'Client NIM (%)', type: 'line', resolveClientNIM: true, exclude: [] },
+                { key: 'Service Income', label: 'Service Income (BRL mm)', type: 'bar', exclude: ['BTG Pactual'] },
+                { key: 'Total Revenues', label: 'Total Revenues (BRL mm)', type: 'bar', exclude: [] },
+                { key: 'NPL Ratio', label: 'NPL Ratio (%)', type: 'line', exclude: ['BTG Pactual'] },
+                { key: 'Cost of Risk', label: 'Cost of Risk (%)', type: 'line', exclude: ['BTG Pactual'] },
+                { key: 'Provision Expenses', label: 'Provision Expenses (BRL mm)', type: 'bar', exclude: ['BTG Pactual'] },
+                { key: 'NII After Provisions', label: 'NII After Provisions (BRL mm)', type: 'bar', exclude: ['BTG Pactual'] },
+                { key: 'Coverage Ratio', label: 'Coverage Ratio (%)', type: 'line', exclude: ['BTG Pactual'] },
+                { key: 'Operating Expenses', label: 'Operating Expenses (BRL mm)', type: 'bar', exclude: [] },
+                { key: 'Efficiency Ratio', label: 'Efficiency Ratio (%)', type: 'line', exclude: [] },
+                { key: 'Net Income', label: 'Net Income (BRL mm)', type: 'bar', exclude: [] },
+                { key: 'Net Income YoY', label: 'Net Income YoY Growth (%)', type: 'line', computed: 'yoy', source: 'Net Income', exclude: [] },
+                { key: 'ROE', label: 'ROE (%)', type: 'line', exclude: [] },
+                { key: 'Equity', label: 'Equity (BRL mm)', type: 'bar', exclude: [] }
+            ];
+
+            const grid = document.createElement('div');
+            grid.className = 'consol-charts-grid';
+
+            consolMetrics.forEach(cm => {
+                const wrap = document.createElement('div');
+                wrap.className = 'consol-chart-container';
+                wrap.innerHTML = '<h3>' + cm.label + '</h3><div class="consol-chart-wrapper"><canvas></canvas></div>';
+                grid.appendChild(wrap);
+            });
+            container.appendChild(grid);
+
+            if (!window.chartInstances) window.chartInstances = {};
+
+            setTimeout(() => {
+                const canvases = grid.querySelectorAll('canvas');
+                consolMetrics.forEach((cm, mi) => {
+                    const canvas = canvases[mi];
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+
+                    const isLine = cm.type === 'line';
+                    const isPctMetric = ['NPL Ratio','Cost of Risk','ROE','NIM','Efficiency Ratio','Coverage Ratio','BIS Ratio'].includes(cm.key) || cm.computed === 'yoy';
+                    const datasets = [];
+                    let allYears = new Set();
+
+                    BANKS.forEach(bank => {
+                        if (cm.exclude.includes(bank)) return;
+                        if (!window.consolChartBanks[bank]) return;
+                        let dk = cm.computed === 'yoy' ? cm.source : cm.key;
+                        if (cm.resolveClientNIM) {
+                            dk = getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+                            if (!dk) return;
+                        }
+                        const data = getChartData(bank, dk);
+                        if (!data) return;
+                        Object.keys(data).forEach(y => allYears.add(y));
+                    });
+
+                    const allYearsSorted = [...allYears].sort((a,b) => parseInt(a.replace('E','')) - parseInt(b.replace('E','')));
+                    const years = allYearsSorted.filter(y => filteredYears.includes(y));
+                    if (years.length === 0) return;
+
+                    BANKS.forEach(bank => {
+                        if (cm.exclude.includes(bank)) return;
+                        if (!window.consolChartBanks[bank]) return;
+
+                        let vals;
+                        if (cm.computed === 'yoy') {
+                            // Compute YoY growth from source metric
+                            const srcData = getChartData(bank, cm.source);
+                            if (!srcData) return;
+                            vals = years.map((y, i) => {
+                                let priorYr;
+                                if (i === 0) {
+                                    const priorNum = String(parseInt(y.replace('E','')) - 1);
+                                    priorYr = srcData[priorNum] != null ? priorNum : (srcData[priorNum + 'E'] != null ? priorNum + 'E' : priorNum);
+                                } else {
+                                    priorYr = years[i-1];
+                                }
+                                const curr = srcData[y], prev = srcData[priorYr];
+                                if (curr == null || prev == null || prev === 0) return null;
+                                return ((curr / prev) - 1) * 100;
+                            });
+                        } else {
+                            let dk = cm.key;
+                            if (cm.resolveClientNIM) {
+                                dk = getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+                                if (!dk) return;
+                            }
+                            const data = getChartData(bank, dk);
+                            if (!data) return;
+                            vals = years.map(y => data[y] != null ? normalizeValue(data[y], cm.key) : null);
+                        }
+
+                        const col = BANK_COLORS[bank];
+                        if (isLine) {
+                            datasets.push({
+                                label: bank, data: vals,
+                                borderColor: col, backgroundColor: 'transparent',
+                                borderWidth: 2.5, fill: false, pointRadius: 4,
+                                pointBackgroundColor: col, pointBorderColor: '#fff',
+                                pointBorderWidth: 1, tension: 0.3, spanGaps: true
+                            });
+                        } else {
+                            datasets.push({
+                                label: bank, data: vals,
+                                backgroundColor: col + 'CC',
+                                borderColor: col, borderWidth: 1
+                            });
+                        }
+                    });
+
+                    const cfg = {
+                        type: isLine ? 'line' : 'bar',
+                        data: { labels: years, datasets: datasets },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            interaction: { intersect: false, mode: 'index' },
+                            plugins: {
+                                legend: {
+                                    display: true, position: 'bottom',
+                                    labels: { color: '#444', font: { size: 11 }, usePointStyle: true, padding: 10, boxWidth: 8 }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#F47920', borderWidth: 1,
+                                    titleColor: '#fff', bodyColor: '#e0e0e0', padding: 10, displayColors: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            const val = context.parsed.y;
+                                            if (val === null || val === undefined) return label + ': N/A';
+                                            if (isPctMetric) return label + ': ' + val.toFixed(2) + '%';
+                                            return label + ': BRL ' + val.toLocaleString('de-DE', {maximumFractionDigits:0}) + ' mm';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    type: 'linear', display: true, position: 'left',
+                                    beginAtZero: !isLine,
+                                    grid: { color: '#e8e8e8', drawBorder: false },
+                                    ticks: {
+                                        color: '#666', font: { size: 11 },
+                                        callback: function(v) {
+                                            if (isPctMetric) return v.toFixed(1) + '%';
+                                            return v.toLocaleString('de-DE', {maximumFractionDigits: 0});
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: { display: false, drawBorder: false },
+                                    ticks: { color: '#666', font: { size: 11 } }
+                                }
+                            }
+                        }
+                    };
+
+                    // Force y-axis to start at 0 for NIM, NPL, Cost of Risk
+                    if (['NIM','NPL Ratio','Cost of Risk'].includes(cm.key)) {
+                        cfg.options.scales.y.beginAtZero = true;
+                        cfg.options.scales.y.min = 0;
+                    }
+
+                    // Auto-headroom for consolidated charts
+                    const allCVals = datasets.flatMap(ds => (ds.data || []).filter(v => v != null && typeof v === 'number'));
+                    if (allCVals.length > 0) {
+                        const cMax = Math.max(...allCVals);
+                        const cMin = Math.min(...allCVals);
+                        const cRange = cMax - cMin;
+                        if (cRange > 0) {
+                            cfg.options.scales.y.suggestedMax = cMax + cRange * 0.15;
+                        }
+                    }
+
+                    const chartId = 'consol-' + cm.key.replace(/\s+/g, '-');
+                    if (window.chartInstances[chartId]) window.chartInstances[chartId].destroy();
+                    window.chartInstances[chartId] = new Chart(ctx, cfg);
+                });
+            }, 0);
+
+            window.renderedCharts.add('consolidated-charts');
+        }
+
+        async function exportToExcel() {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+            const tabId = activeTab.id;
+
+            // ── Style & format helpers ──────────────────────────────────────────
+            const BLK = 'FF1A1A1A', ORG = 'FFF47920', WHT = 'FFFFFFFF';
+            const GRAY_BG = 'FFF5F5F5', ALT_BG = 'FFFAFAFA';
+            const brlFmt  = '#,##0.0';
+            const pctFmt  = '0.0"%"';
+            const yoyFmt  = '+0.0"%";-0.0"%";"-"';
+            const genFmt  = '0.0';
+
+            const PCT_KEYS = new Set(['NPL Ratio','Cost of Risk','ROE','NIM','Client NIM','Total NIM',
+                'Efficiency Ratio','Coverage Ratio','BIS Ratio','Tier 1 Ratio','CET1 Ratio',
+                'Loan Book YoY','Net Income YoY']);
+            const BRL_KEYS = new Set(['Loan Book','Total NII','Client NII','Market NII','Service Income',
+                'Total Revenues','Provision Expenses','NII After Provisions','Operating Expenses',
+                'EBT','Net Income','Equity','Insurance Income']);
+
+            function numFmtFor(m) {
+                if (PCT_KEYS.has(m) || (m && m.includes('YoY'))) return pctFmt;
+                if (BRL_KEYS.has(m)) return brlFmt;
+                return genFmt;
+            }
+            function normForExcel(rawVal, metric) {
+                if (rawVal == null) return null;
+                const n = normalizeValue(rawVal, metric);
+                if (n == null) return null;
+                return BRL_KEYS.has(metric) ? n / 1000 : n;
+            }
+
+            function hdrStyle(cell, bg) {
+                const b = bg || BLK;
+                cell.font = { name: 'Arial', bold: true, size: 11, color: { argb: WHT } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: b } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = { bottom: { style: 'medium', color: { argb: '44444444' } } };
+            }
+            function sectionStyle(cell) {
+                cell.font = { name: 'Arial', bold: true, size: 10 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: GRAY_BG } };
+                cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                cell.border = { bottom: { style: 'medium', color: { argb: 'FFF47920' } } };
+            }
+            function dataStyle(cell, metric, isName, isAlt) {
+                cell.font = { name: 'Arial', size: isName ? 10 : 10, bold: !!isName };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isAlt ? ALT_BG : 'FFFFFFFF' } };
+                cell.alignment = { horizontal: isName ? 'left' : 'right', vertical: 'middle' };
+                cell.border = { bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } } };
+                if (!isName && typeof cell.value === 'number') cell.numFmt = numFmtFor(metric);
+            }
+            function yoyStyle(cell, metric, isName) {
+                cell.font = { name: 'Arial', size: 9, italic: true,
+                    color: { argb: isName ? 'FF999999' : undefined } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCFCFC' } };
+                cell.alignment = { horizontal: isName ? 'left' : 'right', vertical: 'middle' };
+                cell.border = { bottom: { style: 'hair', color: { argb: 'FFEEEEEE' } } };
+                if (!isName && typeof cell.value === 'number') {
+                    cell.numFmt = PCT_KEYS.has(metric) ? '"+"+0.0"bps";"-"0.0"bps";"-"' : yoyFmt;
+                }
+            }
+
+            function addHeaderRow(ws, cols, years, isOrange) {
+                const hRow = ws.addRow([...cols, ...years]);
+                hRow.height = 22;
+                hRow.eachCell((cell, ci) => {
+                    const isEst = ci > cols.length && isEstimate(years[ci - cols.length - 1]);
+                    hdrStyle(cell, isEst ? ORG : (isOrange ? ORG : BLK));
+                });
+                return hRow;
+            }
+
+            function addSectionRow(ws, label, nCols) {
+                const r = ws.addRow([label, ...Array(nCols).fill(null)]);
+                r.height = 18;
+                ws.mergeCells(r.number, 1, r.number, nCols + 1);
+                sectionStyle(r.getCell(1));
+                return r;
+            }
+
+            // ── Build workbook ─────────────────────────────────────────────────
+            const wb = new ExcelJS.Workbook();
+            wb.creator = 'Itaú BBA Research';
+            wb.created = new Date();
+
+            const today = new Date().toISOString().split('T')[0];
+
+            // ── BANK-SPECIFIC TAB ──────────────────────────────────────────────
+            if (!['consolidated', 'consolidated-charts'].includes(tabId)) {
+                const bankIdx = BANK_IDS.indexOf(tabId);
+                if (bankIdx < 0) return;
+                const bank = BANKS[bankIdx];
+                const bankData = window.BAKED_DATA[bank];
+                if (!bankData) return;
+
+                const metrics = Object.keys(bankData).filter(m => {
+                    const first = Object.values(bankData[m])[0];
+                    return typeof first === 'number';
+                });
+                const years = CHART_YEARS;
+
+                const ws = wb.addWorksheet(bank.substring(0, 31));
+                ws.views = [{ state: 'frozen', ySplit: 1 }];
+                ws.columns = [{ width: 26 }, ...years.map(() => ({ width: 12 }))];
+
+                addHeaderRow(ws, ['Metric'], years, false);
+
+                metrics.forEach((m, mi) => {
+                    const rowVals = [m, ...years.map(y => normForExcel(bankData[m][y], m))];
+                    const row = ws.addRow(rowVals);
+                    row.height = 16;
+                    row.eachCell((cell, ci) => dataStyle(cell, m, ci === 1, mi % 2 === 1));
+                });
+
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = bank.replace(/\s+/g, '-').toLowerCase() + '-' + today + '.xlsx';
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+                return;
+            }
+
+            // ── CONSOLIDATED CHARTS ────────────────────────────────────────────
+            if (tabId === 'consolidated-charts') {
+                const cmDef = [
+                    { key: 'Loan Book',          label: 'Loan Book (BRL bi)',         ex: [] },
+                    { key: 'Loan Book YoY',      label: 'Loan Book YoY (%)',          ex: [], yoy: 'Loan Book' },
+                    { key: 'Total NII',          label: 'Total NII (BRL bi)',          ex: ['BTG Pactual'] },
+                    { key: 'NIM',                label: 'Client NIM (%)',             ex: [], nim: true },
+                    { key: 'Service Income',     label: 'Service Income (BRL bi)',     ex: ['BTG Pactual'] },
+                    { key: 'Total Revenues',     label: 'Total Revenues (BRL bi)',     ex: [] },
+                    { key: 'NPL Ratio',          label: 'NPL Ratio (%)',              ex: ['BTG Pactual'] },
+                    { key: 'Cost of Risk',       label: 'Cost of Risk (%)',           ex: ['BTG Pactual'] },
+                    { key: 'Provision Expenses', label: 'Provision Expenses (BRL bi)', ex: ['BTG Pactual'] },
+                    { key: 'NII After Provisions', label: 'NII After Provisions (BRL bi)', ex: ['BTG Pactual'] },
+                    { key: 'Coverage Ratio',     label: 'Coverage Ratio (%)',         ex: ['BTG Pactual'] },
+                    { key: 'Operating Expenses', label: 'Operating Expenses (BRL bi)', ex: [] },
+                    { key: 'Efficiency Ratio',   label: 'Efficiency Ratio (%)',       ex: [] },
+                    { key: 'Net Income',         label: 'Net Income (BRL bi)',         ex: [] },
+                    { key: 'Net Income YoY',     label: 'Net Income YoY (%)',         ex: [], yoy: 'Net Income' },
+                    { key: 'ROE',                label: 'ROE (%)',                    ex: [] },
+                    { key: 'Equity',             label: 'Equity (BRL bi)',            ex: [] }
+                ];
+
+                const allY = CHART_YEARS;
+                cmDef.forEach(cm => {
+                    const banks = BANKS.filter(b => !cm.ex.includes(b));
+                    const shName = cm.label.substring(0, 31);
+                    const ws = wb.addWorksheet(shName);
+                    ws.views = [{ state: 'frozen', ySplit: 1 }];
+                    ws.columns = [{ width: 10 }, ...banks.map(() => ({ width: 14 }))];
+
+                    addHeaderRow(ws, ['Year'], banks, false);
+
+                    allY.forEach((y, yi) => {
+                        const rowVals = [y, ...banks.map(bank => {
+                            if (cm.yoy) {
+                                const src = getChartData(bank, cm.yoy);
+                                if (!src) return null;
+                                const prY = yi === 0 ? String(parseInt(y.replace('E','')) - 1) : allY[yi - 1];
+                                const curr = src[y], prev = src[prY];
+                                if (curr == null || prev == null || prev === 0) return null;
+                                return parseFloat((((curr / prev) - 1) * 100).toFixed(2));
+                            } else if (cm.nim) {
+                                const dk = getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+                                if (!dk) return null;
+                                return normForExcel(getChartData(bank, dk)?.[y], dk);
+                            } else {
+                                return normForExcel(getChartData(bank, cm.key)?.[y], cm.key);
+                            }
+                        })];
+                        const row = ws.addRow(rowVals);
+                        row.height = 16;
+                        const isEst = isEstimate(y);
+                        row.eachCell((cell, ci) => {
+                            cell.font = { name: 'Arial', size: 10, bold: ci === 1,
+                                color: isEst && ci > 1 ? { argb: 'FFD66216' } : undefined };
+                            cell.fill = { type: 'pattern', pattern: 'solid',
+                                fgColor: { argb: yi % 2 === 0 ? 'FFFFFFFF' : ALT_BG } };
+                            cell.alignment = { horizontal: ci === 1 ? 'left' : 'right', vertical: 'middle' };
+                            cell.border = { bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } } };
+                            if (ci > 1 && typeof cell.value === 'number') cell.numFmt = numFmtFor(cm.key);
+                        });
+                    });
+                });
+
+                // ── ADD UNIFIED "Consolidated" SHEET ─────────────────────────
+                const csWs = wb.addWorksheet('Consolidated');
+                csWs.views = [{ state: 'frozen', ySplit: 1, xSplit: 1 }];
+                csWs.columns = [{ width: 28 }, ...allY.map(() => ({ width: 13 }))];
+
+                addHeaderRow(csWs, [''], allY, false);
+
+                cmDef.forEach((cm, cmIdx) => {
+                    // Section header row for the metric
+                    addSectionRow(csWs, cm.label, allY.length);
+
+                    const banks = BANKS.filter(b => !cm.ex.includes(b));
+                    banks.forEach((bank, bi) => {
+                        let val;
+                        const rowVals = [bank, ...allY.map((y, yi) => {
+                            if (cm.yoy) {
+                                const src = getChartData(bank, cm.yoy);
+                                if (!src) return null;
+                                const prY = yi === 0 ? String(parseInt(y.replace('E','')) - 1) : allY[yi - 1];
+                                const curr = src[y], prev = src[prY];
+                                if (curr == null || prev == null || prev === 0) return null;
+                                return parseFloat((((curr / prev) - 1) * 100).toFixed(2));
+                            } else if (cm.nim) {
+                                const dk = getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+                                if (!dk) return null;
+                                return normForExcel(getChartData(bank, dk)?.[y], dk);
+                            } else {
+                                return normForExcel(getChartData(bank, cm.key)?.[y], cm.key);
+                            }
+                        })];
+                        const row = csWs.addRow(rowVals);
+                        row.height = 16;
+                        const isEst = (ci) => ci > 1 && isEstimate(allY[ci - 2]);
+                        row.eachCell((cell, ci) => {
+                            cell.font = { name: 'Arial', size: 10,
+                                color: isEst(ci) && ci > 1 ? { argb: 'FFD66216' } : undefined };
+                            cell.fill = { type: 'pattern', pattern: 'solid',
+                                fgColor: { argb: bi % 2 === 0 ? 'FFFFFFFF' : ALT_BG } };
+                            cell.alignment = { horizontal: ci === 1 ? 'left' : 'right', vertical: 'middle' };
+                            cell.border = { bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } } };
+                            if (ci > 1 && typeof cell.value === 'number') cell.numFmt = numFmtFor(cm.key);
+                        });
+                    });
+                });
+
+                // Move "Consolidated" sheet to first position
+                const sheetCount = wb.worksheets.length;
+                const consolSheet = wb.worksheets[sheetCount - 1];
+                wb.worksheets.splice(sheetCount - 1, 1);
+                wb.worksheets.unshift(consolSheet);
+                // Fix orderNo so ExcelJS writes them in the correct order
+                wb.worksheets.forEach((ws2, i) => { ws2.orderNo = i; });
+
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'consolidated-charts-' + today + '.xlsx';
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+                return;
+            }
+
+            // ── CONSOLIDATED TABLES (one sheet per bank) ───────────────────────
+            const TYEARS = ['2024', '2025E', '2026E', '2027E'];
+            const monMets = [
+                { key: 'Loan Book', label: 'Loan Book' },
+                { key: 'Total NII', label: 'Total NII' },
+                { key: 'Service Income', label: 'Service Income' },
+                { key: 'Total Revenues', label: 'Total Revenues' },
+                { key: 'Provision Expenses', label: 'Provision Expenses' },
+                { key: 'NII After Provisions', label: 'NII After Provisions' },
+                { key: 'Operating Expenses', label: 'Operating Expenses' },
+                { key: 'EBT', label: 'EBT' },
+                { key: 'Net Income', label: 'Net Income' }
+            ];
+            const ratMets = [
+                { key: 'NIM', label: 'NIM' },
+                { key: 'NPL Ratio', label: 'NPL Ratio' },
+                { key: 'Cost of Risk', label: 'Cost of Risk' },
+                { key: 'Coverage Ratio', label: 'Coverage Ratio' },
+                { key: 'Efficiency Ratio', label: 'Efficiency Ratio' },
+                { key: 'ROE', label: 'ROE' },
+                { key: 'BIS Ratio', label: 'BIS Ratio' }
+            ];
+
+            BANKS.forEach(bank => {
+                const ws = wb.addWorksheet(bank.substring(0, 31));
+                ws.views = [{ state: 'frozen', ySplit: 1 }];
+                ws.columns = [{ width: 24 }, ...TYEARS.map(() => ({ width: 12 }))];
+
+                addHeaderRow(ws, ['Metric'], TYEARS, false);
+
+                const resolveNIM = () => getChartData(bank, 'Client NIM') ? 'Client NIM' : (getChartData(bank, 'Total NIM') ? 'Total NIM' : null);
+
+                function addSection(label, mets, showYoY) {
+                    addSectionRow(ws, label, TYEARS.length);
+                    let rowIdx = 0;
+                    mets.forEach(bm => {
+                        let dk = bm.key === 'NIM' ? resolveNIM() : bm.key;
+                        if (!dk) return;
+                        const data = getChartData(bank, dk);
+                        if (!data) return;
+                        const metKey = bm.key === 'NIM' ? dk : bm.key;
+                        const lbl = dk === 'Client NIM' ? 'Client NIM' : bm.label;
+                        const isAlt = rowIdx % 2 === 1;
+
+                        const mainVals = [lbl, ...TYEARS.map(y => normForExcel(data[y], metKey))];
+                        const row = ws.addRow(mainVals);
+                        row.height = 17;
+                        row.eachCell((cell, ci) => dataStyle(cell, metKey, ci === 1, isAlt));
+
+                        if (showYoY) {
+                            const yVals = ['  ↳ YoY', null, ...TYEARS.slice(1).map((y, i) => {
+                                const curr = data[y], prev = data[TYEARS[i]];
+                                if (curr == null || prev == null) return null;
+                                const nc = normalizeValue(curr, metKey), np = normalizeValue(prev, metKey);
+                                if (nc == null || np == null) return null;
+                                const isPctM = PCT_KEYS.has(metKey);
+                                return isPctM ? Math.round((nc - np) * 100) : (np !== 0 ? parseFloat((((nc / np) - 1) * 100).toFixed(2)) : null);
+                            })];
+                            const yRow = ws.addRow(yVals);
+                            yRow.height = 14;
+                            yRow.eachCell((cell, ci) => {
+                                yoyStyle(cell, metKey, ci === 1);
+                                if (ci > 2 && typeof cell.value === 'number') {
+                                    const isPctM = PCT_KEYS.has(metKey);
+                                    cell.numFmt = isPctM ? '"+"+0"bps";-0"bps";"-"' : yoyFmt;
+                                    cell.font = { name: 'Arial', size: 9, italic: true,
+                                        color: { argb: cell.value >= 0 ? 'FF1A8A3F' : 'FFC0392B' } };
+                                }
+                            });
+                        }
+                        rowIdx++;
+                    });
+                }
+
+                addSection('Financial Results (BRL bi)', monMets, true);
+                addSection('Ratios, Returns & Solvency', ratMets, false);
+            });
+
+            const buf = await wb.xlsx.writeBuffer();
+            const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'consolidated-tables-' + today + '.xlsx';
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+        }
+
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+            setupDropZone();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function setupDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropZone.onclick = () => fileInput.click();
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                }
+            });
+        }
+
+        function uploadData() {
+            const fileInput = document.getElementById('fileInput');
+            const bankSelect = document.getElementById('bankSelect');
+            const loading = document.getElementById('loadingIndicator');
+
+            if (!fileInput.files.length) {
+                alert('Please select a file');
+                return;
+            }
+
+            loading.classList.add('active');
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    const selectedBank = bankSelect.value;
+                    parseAndUpdateData(jsonData, selectedBank);
+
+                    alert('Data updated successfully!');
+                    loading.classList.remove('active');
+                    closeUploadModal();
+                    
+                    window.renderedCharts = new Set();
+                    Object.keys(window.chartInstances || {}).forEach(key => {
+                        window.chartInstances[key].destroy();
+                    });
+                    window.chartInstances = {};
+                    
+                    const activeTab = document.querySelector('.tab-content.active');
+                    if (activeTab) {
+                        activeTab.classList.remove('active');
+                        activeTab.classList.add('active');
+                    }
+
+                } catch (error) {
+                    alert('Error parsing file: ' + error.message);
+                    loading.classList.remove('active');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseAndUpdateData(jsonData, selectedBank) {
+            jsonData.forEach(row => {
+                const bank = row.Bank || selectedBank;
+                const metric = row.Metric;
+                const year = row.Year;
+                const value = parseFloat(row.Value);
+
+                if (bank && metric && year && !isNaN(value)) {
+                    if (!window.BAKED_DATA[bank]) {
+                        window.BAKED_DATA[bank] = {};
+                    }
+                    if (!window.BAKED_DATA[bank][metric]) {
+                        window.BAKED_DATA[bank][metric] = {};
+                    }
+                    window.BAKED_DATA[bank][metric][year] = value;
+                }
+            });
+        }
+
+        document.getElementById('uploadModal').addEventListener('click', (e) => {
+            if (e.target.id === 'uploadModal') {
+                closeUploadModal();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderConsolidatedTab();
+        });
+    </script>
+</body>
+</html>
